@@ -5,15 +5,15 @@
       "locked": {
         "lastModified": 1786381420,
         "narHash": "sha256-e9WJT8P+pTQvL1KL260/GkXbgU0Hl1o/KzV8PUir+mQ=",
-        "ref": "refs/heads/main",
+        "owner": "nomadstar",
+        "repo": "dotfiles",
         "rev": "a67c1b9686836d8ae2b78e003538014a7a5abfb5",
-        "revCount": 1,
-        "type": "git",
-        "url": "file:///home/nanixtus/dotfiles"
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///home/nanixtus/dotfiles"
+        "owner": "nomadstar",
+        "repo": "dotfiles",
+        "type": "github"
       }
     },
     "home-manager": {

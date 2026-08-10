@@ -59,7 +59,7 @@ as-is.
 ## Rebuilding this machine
 
 ```sh
-git clone --recurse-submodules <this-repo-url>
+git clone --recurse-submodules https://github.com/nomadstar/nixos-config.git
 cd nixos-config
 sudo nixos-rebuild build --flake .#desktop   # build only, verify it succeeds
 sudo nixos-rebuild switch --flake .#desktop  # only after build succeeds
@@ -72,7 +72,7 @@ before building.
 
 ```sh
 # partition + format disks, mount at /mnt, then:
-git clone --recurse-submodules <this-repo-url> /mnt/etc/nixos-config
+git clone --recurse-submodules https://github.com/nomadstar/nixos-config.git /mnt/etc/nixos-config
 nixos-install --flake /mnt/etc/nixos-config#desktop
 ```
 

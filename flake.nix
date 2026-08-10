@@ -12,7 +12,7 @@
     # as its own flake input so Nix evaluation doesn't depend on the parent
     # repo's git index carrying submodule content (it doesn't).
     dotfiles = {
-      url = "git+file:///home/nanixtus/dotfiles";
+      url = "github:nomadstar/dotfiles";
       flake = false;
     };
 
