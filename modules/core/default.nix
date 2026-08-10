@@ -7,6 +7,7 @@
     ./networking.nix
     ./users.nix
     ./packages.nix
+    ./fonts.nix
     ./secrets.nix
   ];
 }

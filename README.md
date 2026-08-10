@@ -55,7 +55,7 @@ as-is.
 | Host | Status | Notes |
 |---|---|---|
 | `desktop` | Active, daily driver | UEFI, GRUB (os-prober enabled for a dual-boot Windows install), NVMe root, separate ext4 `/home` disk |
-| `laptop` | Not yet added | Planned |
+| `laptop` | Active | Victus by HP Gaming Laptop 15-fa1xxx, Intel i5-12450H + NVIDIA RTX 2050 (Ampere, GA107) hybrid graphics, single ext4 root |
 
 ## Rebuilding this machine
 
@@ -121,10 +121,13 @@ This desktop's GPU is an **AMD Radeon RX 9060 XT (Navi 44)** using the
 in-tree open-source `amdgpu` driver - confirmed via `lspci` - so
 `devShells.ai = mkAiShell { gpu = "amd"; }`, which adds `rocminfo` and
 `rocm-smi` (Ollama itself detects and uses ROCm automatically when present).
-When the `laptop` host (NVIDIA GPU) is added, its `ai` devShell becomes
-`mkAiShell { gpu = "nvidia"; }`, pulling in `cudaPackages.cudatoolkit` and
-`cuda_nvcc` instead - already verified to evaluate correctly under
-`allowUnfree`, just not wired to a real host yet.
+
+The `laptop` host has an **NVIDIA GeForce RTX 2050 (Ampere, GA107)** -
+confirmed via `lspci` - alongside integrated Intel UHD graphics. Its shell is
+`devShells.ai-laptop = mkAiShell { gpu = "nvidia"; }`, pulling in
+`cudaPackages.cudatoolkit` and `cuda_nvcc` under `pkgsUnfree`. NVIDIA
+proprietary drivers / PRIME offload for the hybrid graphics setup aren't
+configured at the NixOS level yet - see roadmap.
 
 System-wide GPU acceleration (`hardware.graphics.enable`, ROCm OpenCL ICDs)
 isn't enabled yet at the NixOS level - see roadmap.
@@ -171,13 +174,23 @@ the migration, per a preserve-behavior-first policy:
 - [x] `ai` / `pentest` / `sdr` devShells
 - [x] `monitors.conf` now sourced from `hyprland.conf` (nwg-displays layout
       actually applies)
+- [x] `laptop` host (Victus 15-fa1xxx, Intel + NVIDIA RTX 2050 hybrid
+      graphics) - reuses `modules/core`/`modules/desktop` as-is; its own
+      `ai-laptop` devShell added
+- [x] Nerd Fonts (`modules/core/fonts.nix`: JetBrainsMono + symbols-only),
+      shared by both hosts
 - [ ] Fix remaining known gaps above (dead workspaces.conf, broken nemo
       binding)
 - [ ] i3-style `H/J/K/L` focus and window-movement keybindings
 - [ ] Waybar and Wofi: currently running on package defaults, no custom
       config exists yet
 - [ ] GRUB theming, ReGreet theming (`assets/grub`, `assets/regreet`)
-- [ ] `laptop` host
+- [ ] `laptop`'s age key was added to `.sops.yaml`, but `secrets/secrets.yaml`
+      itself still needs `sops updatekeys` run from a machine that can
+      already decrypt it (the desktop) before the laptop can actually read
+      `example_secret`
+- [ ] NVIDIA proprietary driver / PRIME offload for the laptop's hybrid
+      graphics (currently unconfigured at the NixOS level)
 - [ ] System-level GPU acceleration (`hardware.graphics.enable`, ROCm OpenCL
       ICDs for the desktop's AMD GPU) - currently only devShell-level
 - [ ] `modules/development` (GPU compute - ROCm or CUDA depending on host

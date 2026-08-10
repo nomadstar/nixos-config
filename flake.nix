@@ -69,11 +69,29 @@
         ];
       };
 
+      nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+          ./hosts/laptop/default.nix
+          sops-nix.nixosModules.sops
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit dotfiles; };
+            home-manager.users.nanixtus = import ./hosts/laptop/home.nix;
+          }
+        ];
+      };
+
       # Optional, on-demand tool sets: `nix develop .#<name>`. Nothing here
       # is installed into the system config - these are throwaway shells.
       devShells.${system} = {
         # desktop's GPU: AMD Radeon RX 9060 XT (Navi 44), amdgpu driver -> ROCm.
         ai = mkAiShell { gpu = "amd"; };
+
+        # laptop's GPU: NVIDIA GeForce RTX 2050 (Ampere, GA107) -> CUDA.
+        ai-laptop = mkAiShell { gpu = "nvidia"; };
 
         pentest = pkgs.mkShell {
           name = "pentest-devshell";
