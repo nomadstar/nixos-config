@@ -18,9 +18,12 @@
 
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    # Claude Code CLI, for the ai devShell. Not in nixpkgs.
+    claude-code.url = "github:ryoppippi/nix-claude-code";
   };
 
-  outputs = { self, nixpkgs, home-manager, dotfiles, sops-nix, ... }:
+  outputs = { self, nixpkgs, home-manager, dotfiles, sops-nix, claude-code, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -50,6 +53,7 @@
             python3Packages.pip
             python3Packages.virtualenv
             ollama
+            claude-code.packages.${system}.default
           ] ++ gpuPackages;
         };
     in

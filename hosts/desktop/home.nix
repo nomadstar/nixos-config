@@ -11,6 +11,7 @@
   xdg.configFile."hypr/hyprland.conf".source = "${dotfiles}/hypr/hyprland.conf";
   xdg.configFile."hypr/monitors.conf".source = "${dotfiles}/hypr/monitors.conf";
   xdg.configFile."hypr/workspaces.conf".source = "${dotfiles}/hypr/workspaces.conf";
+  xdg.configFile."hypr/hypremoji.conf".source = "${dotfiles}/hypr/hypremoji.conf";
   xdg.configFile."alacritty/alacritty.toml".source = "${dotfiles}/alacritty/alacritty.toml";
   xdg.configFile."nwg-displays/config".source = "${dotfiles}/nwg-displays/config";
 

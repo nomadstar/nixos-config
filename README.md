@@ -14,27 +14,33 @@ Wayland, with an i3-inspired keybinding layout.
 ```
 nixos-config/
 ├── flake.nix / flake.lock   Entry point. Inputs: nixpkgs (25.11), home-manager,
-│                             sops-nix, and the dotfiles repo.
+│                             sops-nix, the dotfiles repo, and claude-code
+│                             (Claude Code CLI, for the ai devShell).
 ├── hosts/
-│   └── desktop/              Host-specific: hostname, timezone, locale, hardware
-│       ├── default.nix       (disk UUIDs), and the home-manager wiring for this host.
-│       ├── hardware-configuration.nix
-│       └── home.nix
+│   ├── desktop/               Host-specific: hostname, timezone, locale, hardware
+│   │   ├── default.nix        (disk UUIDs), and the home-manager wiring for this host.
+│   │   ├── hardware-configuration.nix
+│   │   └── home.nix
+│   └── laptop/                 Same shape as desktop/.
 ├── modules/
 │   ├── core/                 Shared across all hosts.
 │   │   ├── nix.nix           experimental-features (flakes, nix-command)
 │   │   ├── boot.nix          GRUB / UEFI / os-prober
 │   │   ├── networking.nix    NetworkManager, sshd
 │   │   ├── users.nix         user account
-│   │   ├── packages.nix      base CLI + diagnostics tools
+│   │   ├── packages.nix      base CLI + diagnostics tools (incl. nemo, gvfs)
+│   │   ├── fonts.nix         Nerd Fonts (JetBrainsMono + symbols-only)
 │   │   └── secrets.nix       sops-nix wiring
 │   └── desktop/               Shared desktop-environment modules.
 │       ├── hyprland.nix      compositor + Wayland utils
 │       ├── waybar.nix
 │       ├── regreet.nix       greetd + ReGreet (graphical login)
-│       └── monitors.nix      host-specific NixOS-level monitor hook (currently a
-│                              no-op; actual monitor layout lives in the dotfiles
-│                              repo's hypr/monitors.conf, applied via Home Manager)
+│       ├── monitors.nix      host-specific NixOS-level monitor hook (currently a
+│       │                      no-op; actual monitor layout lives in the dotfiles
+│       │                      repo's hypr/monitors.conf, applied via Home Manager)
+│       ├── hypremoji.nix     HyprEmoji package wiring (see hypremoji/)
+│       └── hypremoji/        Source-built package (not in nixpkgs): package.nix
+│                              + a vendored Cargo.lock (upstream doesn't ship one)
 ├── secrets/
 │   └── secrets.yaml          sops-encrypted. Safe to be public - see Secrets below.
 ├── .sops.yaml                 sops creation rules (public age keys only)
@@ -46,9 +52,8 @@ nixos-config/
 
 Common configuration lives in `modules/`; anything host-specific (disk UUIDs,
 hostname, monitor layout) lives under `hosts/<name>/`. Adding a second machine
-(e.g. `laptop`) means adding `hosts/laptop/` and a matching
-`nixosConfigurations.laptop` in `flake.nix` - it reuses every shared module
-as-is.
+means adding `hosts/<name>/` and a matching `nixosConfigurations.<name>` in
+`flake.nix` - it reuses every shared module as-is, as `laptop` now does.
 
 ## Supported hosts
 
@@ -87,7 +92,8 @@ Tooling for specific domains (AI/local LLM work, pentesting, SDR) is **not**
 installed into the base system. Instead:
 
 ```sh
-nix develop .#ai        # python, ollama, ROCm diagnostics (rocminfo, rocm-smi)
+nix develop .#ai        # python, ollama, claude (Claude Code CLI), ROCm diagnostics (rocminfo, rocm-smi)
+nix develop .#ai-laptop  # same, with CUDA instead of ROCm (laptop's NVIDIA GPU)
 nix develop .#pentest    # nmap, wireshark, gobuster, hydra, sqlmap, netcat
 nix develop .#sdr        # rtl-sdr, gqrx, gnuradio
 ```
@@ -158,8 +164,6 @@ Carried over as-is from the working system rather than silently "fixed" during
 the migration, per a preserve-behavior-first policy:
 
 - `home/hypr/workspaces.conf` exists but is empty/unused.
-- The `hyprland.conf` file-manager keybinding (`SUPER+W`) points at `nemo`,
-  which isn't installed anywhere in this config.
 - Hyprland keybindings are close to, but not a full match for, an i3 mental
   model yet (arrow-key focus/mouse-drag window movement rather than
   `H/J/K/L`).
@@ -179,8 +183,15 @@ the migration, per a preserve-behavior-first policy:
       `ai-laptop` devShell added
 - [x] Nerd Fonts (`modules/core/fonts.nix`: JetBrainsMono + symbols-only),
       shared by both hosts
-- [ ] Fix remaining known gaps above (dead workspaces.conf, broken nemo
-      binding)
+- [x] `nemo` (`modules/core/packages.nix`, with `services.gvfs.enable` for
+      trash/mounts) - the `SUPER+W` keybinding now resolves to a real binary
+- [x] HyprEmoji (`modules/desktop/hypremoji.nix`, built from source - not in
+      nixpkgs) - `SUPER+.` opens it, keybind/window rules sourced from the
+      `home/` dotfiles the same way `monitors.conf` is
+- [x] `claude` (Claude Code CLI, via the `claude-code` flake input -
+      `github:ryoppippi/nix-claude-code`) added to the `ai`/`ai-laptop`
+      devShells
+- [ ] Fix remaining known gaps above (dead workspaces.conf)
 - [ ] i3-style `H/J/K/L` focus and window-movement keybindings
 - [ ] Waybar and Wofi: currently running on package defaults, no custom
       config exists yet

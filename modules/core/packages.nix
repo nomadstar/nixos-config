@@ -5,11 +5,18 @@
   programs.neovim.enable = true;
   programs.mtr.enable = true;
 
+  # gvfs backs Nemo's trash, network mounts (smb://, sftp://) and
+  # removable-media auto-mount.
+  services.gvfs.enable = true;
+
   environment.systemPackages = with pkgs; [
     # Editors
     vim
     neovim
     nano
+
+    # File manager (hyprland.conf's $fileManager, SUPER+W)
+    nemo
 
     # CLI
     git
