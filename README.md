@@ -45,8 +45,8 @@ nixos-config/
 │   └── secrets.yaml          sops-encrypted. Safe to be public - see Secrets below.
 ├── .sops.yaml                 sops creation rules (public age keys only)
 ├── home/                      git submodule -> the dotfiles repo (Hyprland,
-│                              Alacritty, nwg-displays configs), applied via
-│                              Home Manager.
+│                              Alacritty, nwg-displays, waybar configs), applied
+│                              via Home Manager.
 └── assets/                    grub/, regreet/, wallpapers/ - theming placeholders.
 ```
 
@@ -191,10 +191,12 @@ the migration, per a preserve-behavior-first policy:
 - [x] `claude` (Claude Code CLI, via the `claude-code` flake input -
       `github:ryoppippi/nix-claude-code`) added to the `ai`/`ai-laptop`
       devShells
+- [x] Waybar: real Hyprland config (`home/waybar/`) replacing the nixpkgs
+      Sway example, whose missing `FontAwesome` font was why icons weren't
+      showing at all
 - [ ] Fix remaining known gaps above (dead workspaces.conf)
 - [ ] i3-style `H/J/K/L` focus and window-movement keybindings
-- [ ] Waybar and Wofi: currently running on package defaults, no custom
-      config exists yet
+- [ ] Wofi: still running on package defaults, no custom config exists yet
 - [ ] GRUB theming, ReGreet theming (`assets/grub`, `assets/regreet`)
 - [ ] `laptop`'s age key was added to `.sops.yaml`, but `secrets/secrets.yaml`
       itself still needs `sops updatekeys` run from a machine that can

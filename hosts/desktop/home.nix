@@ -14,6 +14,8 @@
   xdg.configFile."hypr/hypremoji.conf".source = "${dotfiles}/hypr/hypremoji.conf";
   xdg.configFile."alacritty/alacritty.toml".source = "${dotfiles}/alacritty/alacritty.toml";
   xdg.configFile."nwg-displays/config".source = "${dotfiles}/nwg-displays/config";
+  xdg.configFile."waybar/config.jsonc".source = "${dotfiles}/waybar/config.jsonc";
+  xdg.configFile."waybar/style.css".source = "${dotfiles}/waybar/style.css";
 
   home.stateVersion = "25.11";
 }
