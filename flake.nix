@@ -15,9 +15,12 @@
       url = "git+file:///home/nanixtus/dotfiles";
       flake = false;
     };
+
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, home-manager, dotfiles, ... }:
+  outputs = { self, nixpkgs, home-manager, dotfiles, sops-nix, ... }:
     let
       system = "x86_64-linux";
     in
@@ -26,6 +29,7 @@
         inherit system;
         modules = [
           ./hosts/desktop/default.nix
+          sops-nix.nixosModules.sops
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;

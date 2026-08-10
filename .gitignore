@@ -10,14 +10,15 @@ result-*
 *~
 .DS_Store
 
-# never version secrets, keys, or credentials
+# never version raw key material or env files
+# (sops-encrypted files under secrets/ are intentionally NOT excluded here -
+# they're ciphertext and are meant to be committed; verify with `git show`
+# before committing that any *.yaml under secrets/ starts with ENC[ / sops:
+# metadata, never plaintext)
 *.pem
 *.key
 id_rsa*
 id_ed25519*
 *.pfx
-*secret*
-*password*
-*token*
 .env
 .env.*
