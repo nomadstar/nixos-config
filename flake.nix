@@ -23,6 +23,7 @@
   outputs = { self, nixpkgs, home-manager, dotfiles, sops-nix, ... }:
     let
       system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
     in
     {
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
@@ -38,6 +39,25 @@
             home-manager.users.nanixtus = import ./hosts/desktop/home.nix;
           }
         ];
+      };
+
+      # Optional, on-demand tool sets: `nix develop .#<name>`. Nothing here
+      # is installed into the system config - these are throwaway shells.
+      devShells.${system} = {
+        ai = pkgs.mkShell {
+          name = "ai-devshell";
+          packages = with pkgs; [ python3 python3Packages.pip python3Packages.virtualenv ollama ];
+        };
+
+        pentest = pkgs.mkShell {
+          name = "pentest-devshell";
+          packages = with pkgs; [ nmap wireshark gobuster hydra sqlmap netcat-gnu ];
+        };
+
+        sdr = pkgs.mkShell {
+          name = "sdr-devshell";
+          packages = with pkgs; [ rtl-sdr gqrx gnuradio ];
+        };
       };
     };
 }
