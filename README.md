@@ -32,8 +32,9 @@ nixos-config/
 │       ├── hyprland.nix      compositor + Wayland utils
 │       ├── waybar.nix
 │       ├── regreet.nix       greetd + ReGreet (graphical login)
-│       └── monitors.nix      host-specific monitor wiring hook (currently a no-op,
-│                              see Known gaps below)
+│       └── monitors.nix      host-specific NixOS-level monitor hook (currently a
+│                              no-op; actual monitor layout lives in the dotfiles
+│                              repo's hypr/monitors.conf, applied via Home Manager)
 ├── secrets/
 │   └── secrets.yaml          sops-encrypted. Safe to be public - see Secrets below.
 ├── .sops.yaml                 sops creation rules (public age keys only)
@@ -153,8 +154,6 @@ specific disks, not credentials), and the hostname/username
 Carried over as-is from the working system rather than silently "fixed" during
 the migration, per a preserve-behavior-first policy:
 
-- `home/hypr/hyprland.conf` never sources `monitors.conf`, so the
-  nwg-displays-generated dual-monitor layout likely isn't actually applied.
 - `home/hypr/workspaces.conf` exists but is empty/unused.
 - The `hyprland.conf` file-manager keybinding (`SUPER+W`) points at `nemo`,
   which isn't installed anywhere in this config.
@@ -170,8 +169,10 @@ the migration, per a preserve-behavior-first policy:
       submodule
 - [x] sops-nix encrypted secrets pipeline (scaffolded, one demo value)
 - [x] `ai` / `pentest` / `sdr` devShells
-- [ ] Fix the known gaps above (monitor source line, dead workspaces.conf,
-      broken nemo binding)
+- [x] `monitors.conf` now sourced from `hyprland.conf` (nwg-displays layout
+      actually applies)
+- [ ] Fix remaining known gaps above (dead workspaces.conf, broken nemo
+      binding)
 - [ ] i3-style `H/J/K/L` focus and window-movement keybindings
 - [ ] Waybar and Wofi: currently running on package defaults, no custom
       config exists yet
