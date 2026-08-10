@@ -86,13 +86,37 @@ Tooling for specific domains (AI/local LLM work, pentesting, SDR) is **not**
 installed into the base system. Instead:
 
 ```sh
-nix develop .#ai        # python, ollama
+nix develop .#ai        # python, ollama, ROCm diagnostics (rocminfo, rocm-smi)
 nix develop .#pentest    # nmap, wireshark, gobuster, hydra, sqlmap, netcat
 nix develop .#sdr        # rtl-sdr, gqrx, gnuradio
 ```
 
 These are throwaway shells - nothing they provide persists outside the shell,
 and none of it touches `environment.systemPackages`.
+
+### AI: quick usage (no shell needed)
+
+For one-off runs, `nix run` fetches and executes a package without entering a
+shell or installing anything persistently:
+
+```sh
+nix run nixpkgs#opencode                              # OpenCode
+nix run github:jacopone/antigravity-nix#agy            # Antigravity CLI (agy)
+```
+
+The second command pulls a third-party flake (not vetted as part of this
+repo) - read it before trusting it, same as any `curl | sh`.
+
+### GPU compatibility
+
+This desktop's GPU is an **AMD Radeon RX 9060 XT (Navi 44)** using the
+in-tree open-source `amdgpu` driver - confirmed via `lspci`. That means
+**ROCm, not CUDA**: CUDA packages are NVIDIA-only and would silently do
+nothing useful on this hardware. The `ai` devShell includes `rocminfo` and
+`rocm-smi` to confirm the GPU is visible; Ollama detects and uses ROCm
+automatically when present. System-wide GPU acceleration
+(`hardware.graphics.enable`, ROCm OpenCL ICDs) isn't enabled yet at the NixOS
+level - see roadmap.
 
 ## Secrets
 
@@ -143,7 +167,10 @@ the migration, per a preserve-behavior-first policy:
       config exists yet
 - [ ] GRUB theming, ReGreet theming (`assets/grub`, `assets/regreet`)
 - [ ] `laptop` host
-- [ ] `modules/development` (CUDA, general dev tooling) and
-      `modules/security` (network security, reverse engineering) as
-      opt-in NixOS modules, distinct from the ad-hoc devShells above
+- [ ] System-level GPU acceleration (`hardware.graphics.enable`, ROCm OpenCL
+      ICDs for the desktop's AMD GPU) - currently only devShell-level
+- [ ] `modules/development` (GPU compute - ROCm or CUDA depending on host
+      GPU, general dev tooling) and `modules/security` (network security,
+      reverse engineering) as opt-in NixOS modules, distinct from the
+      ad-hoc devShells above
 - [ ] Recovery/installer ISO generation

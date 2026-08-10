@@ -46,7 +46,19 @@
       devShells.${system} = {
         ai = pkgs.mkShell {
           name = "ai-devshell";
-          packages = with pkgs; [ python3 python3Packages.pip python3Packages.virtualenv ollama ];
+          packages = with pkgs; [
+            python3
+            python3Packages.pip
+            python3Packages.virtualenv
+            ollama
+
+            # GPU: this host has an AMD Radeon (Navi, amdgpu driver) -> ROCm,
+            # not CUDA (CUDA is NVIDIA-only and would silently no-op here).
+            # rocminfo/rocm-smi confirm the GPU is visible; Ollama itself
+            # detects and uses ROCm automatically when present.
+            rocmPackages.rocminfo
+            rocmPackages.rocm-smi
+          ];
         };
 
         pentest = pkgs.mkShell {
