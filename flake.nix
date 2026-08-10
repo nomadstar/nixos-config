@@ -24,6 +24,34 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+
+      # CUDA packages are unfree; only the pkgs instance used to build the
+      # nvidia devShell variant allows it. The system-wide `pkgs` above (and
+      # therefore nixosConfigurations) stays unfree-free unless you decide
+      # otherwise for the whole system.
+      pkgsUnfree = import nixpkgs { inherit system; config.allowUnfree = true; };
+
+      # GPU policy for the ai devShell, per host: NVIDIA -> CUDA, AMD -> ROCm,
+      # anything else (no dGPU, Intel-only, etc.) -> no GPU packages added.
+      mkAiShell = { gpu ? "none" }:
+        let
+          gpuPackages =
+            if gpu == "amd" then
+              (with pkgs; [ rocmPackages.rocminfo rocmPackages.rocm-smi ])
+            else if gpu == "nvidia" then
+              (with pkgsUnfree; [ cudaPackages.cudatoolkit cudaPackages.cuda_nvcc ])
+            else
+              [ ];
+        in
+        pkgs.mkShell {
+          name = "ai-devshell";
+          packages = with pkgs; [
+            python3
+            python3Packages.pip
+            python3Packages.virtualenv
+            ollama
+          ] ++ gpuPackages;
+        };
     in
     {
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
@@ -44,22 +72,8 @@
       # Optional, on-demand tool sets: `nix develop .#<name>`. Nothing here
       # is installed into the system config - these are throwaway shells.
       devShells.${system} = {
-        ai = pkgs.mkShell {
-          name = "ai-devshell";
-          packages = with pkgs; [
-            python3
-            python3Packages.pip
-            python3Packages.virtualenv
-            ollama
-
-            # GPU: this host has an AMD Radeon (Navi, amdgpu driver) -> ROCm,
-            # not CUDA (CUDA is NVIDIA-only and would silently no-op here).
-            # rocminfo/rocm-smi confirm the GPU is visible; Ollama itself
-            # detects and uses ROCm automatically when present.
-            rocmPackages.rocminfo
-            rocmPackages.rocm-smi
-          ];
-        };
+        # desktop's GPU: AMD Radeon RX 9060 XT (Navi 44), amdgpu driver -> ROCm.
+        ai = mkAiShell { gpu = "amd"; };
 
         pentest = pkgs.mkShell {
           name = "pentest-devshell";

@@ -109,14 +109,24 @@ repo) - read it before trusting it, same as any `curl | sh`.
 
 ### GPU compatibility
 
+The `ai` devShell is built by a small `mkAiShell { gpu }` helper in
+`flake.nix` with a fixed policy, applied per host: **NVIDIA -> CUDA, AMD ->
+ROCm, anything else -> no GPU packages added.** CUDA is unfree, so it's only
+allowed for the specific `pkgs` instance used to build the CUDA variant
+(`pkgsUnfree`) - the system-wide `pkgs` used for `nixosConfigurations` stays
+unfree-free.
+
 This desktop's GPU is an **AMD Radeon RX 9060 XT (Navi 44)** using the
-in-tree open-source `amdgpu` driver - confirmed via `lspci`. That means
-**ROCm, not CUDA**: CUDA packages are NVIDIA-only and would silently do
-nothing useful on this hardware. The `ai` devShell includes `rocminfo` and
-`rocm-smi` to confirm the GPU is visible; Ollama detects and uses ROCm
-automatically when present. System-wide GPU acceleration
-(`hardware.graphics.enable`, ROCm OpenCL ICDs) isn't enabled yet at the NixOS
-level - see roadmap.
+in-tree open-source `amdgpu` driver - confirmed via `lspci` - so
+`devShells.ai = mkAiShell { gpu = "amd"; }`, which adds `rocminfo` and
+`rocm-smi` (Ollama itself detects and uses ROCm automatically when present).
+When the `laptop` host (NVIDIA GPU) is added, its `ai` devShell becomes
+`mkAiShell { gpu = "nvidia"; }`, pulling in `cudaPackages.cudatoolkit` and
+`cuda_nvcc` instead - already verified to evaluate correctly under
+`allowUnfree`, just not wired to a real host yet.
+
+System-wide GPU acceleration (`hardware.graphics.enable`, ROCm OpenCL ICDs)
+isn't enabled yet at the NixOS level - see roadmap.
 
 ## Secrets
 
