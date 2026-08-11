@@ -1,4 +1,4 @@
-{ fluxcast, ... }:
+{ pkgs, fluxcast, ... }:
 
 # FluxCast (https://github.com/IlyaP358/fluxcast) isn't in nixpkgs, and one
 # of its dependencies (upnpclient) isn't either, so both are built here.
@@ -8,13 +8,34 @@
 #   screen capture) and gst-launch-1.0/gst-inspect-1.0 (the actual WFD RTP
 #   mux/transport), so those need to be on PATH - wrapProgram below handles
 #   that instead of adding them to environment.systemPackages.
-# - P2P/WFD group formation goes through NetworkManager over D-Bus
-#   (services.networking.networkmanager, already enabled), not raw
-#   wpa_supplicant config files - nothing extra to wire up for that.
+# - P2P/WFD group formation goes through NetworkManager, but fluxcast also
+#   probes wpa_supplicant's own D-Bus interface directly (WFDIE support,
+#   P2P capability checks) - NixOS's default dbus policy for
+#   fi.w1.wpa_supplicant1 only allows root, so the `networkmanager` group
+#   (nanixtus is already in it, see modules/core/users.nix) gets read access
+#   below. Method calls beyond property reads and `own` stay root-only.
 # - This only installs the `fluxcast` command; nothing here auto-starts it
 #   or touches firewall/network config. Run `fluxcast --doctor` first to
 #   check what's actually available on a given machine.
 {
+  # services.dbus.packages (not environment.etc) is how NixOS merges extra
+  # policy fragments into /etc/dbus-1/system.d - environment.etc."dbus-1"
+  # is already claimed whole by the dbus module itself, so a nested
+  # environment.etc."dbus-1/system.d/..." entry fails to build.
+  services.dbus.packages = [
+    (pkgs.writeTextDir "share/dbus-1/system.d/wpa_supplicant-fluxcast.conf" ''
+      <!DOCTYPE busconfig PUBLIC
+       "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+       "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+      <busconfig>
+        <policy group="networkmanager">
+          <allow send_destination="fi.w1.wpa_supplicant1"/>
+          <allow receive_sender="fi.w1.wpa_supplicant1" receive_type="signal"/>
+        </policy>
+      </busconfig>
+    '')
+  ];
+
   nixpkgs.overlays = [
     (final: prev:
       let
@@ -55,18 +76,29 @@
           ];
 
           nativeBuildInputs = [ prev.makeWrapper ];
-          postFixup = ''
-            wrapProgram $out/bin/fluxcast --prefix PATH : ${prev.lib.makeBinPath [
-              prev.wf-recorder
-              prev.ffmpeg
-              prev.gst_all_1.gstreamer
-              prev.gst_all_1.gst-plugins-base
-              prev.gst_all_1.gst-plugins-good
-              prev.gst_all_1.gst-plugins-bad
-              prev.gst_all_1.gst-plugins-ugly
-              prev.iproute2
-            ]}
-          '';
+          postFixup =
+            let
+              gstPlugins = with prev.gst_all_1; [
+                gst-plugins-base
+                gst-plugins-good
+                gst-plugins-bad
+                gst-plugins-ugly
+              ];
+            in
+            ''
+              wrapProgram $out/bin/fluxcast \
+                --prefix PATH : ${prev.lib.makeBinPath ([
+                  prev.wf-recorder
+                  prev.ffmpeg
+                  prev.gst_all_1.gstreamer
+                  prev.iproute2
+                  prev.pulseaudio # pactl
+                  prev.xorg.xrandr
+                  prev.dnsmasq
+                  prev.iw
+                ] ++ gstPlugins)} \
+                --prefix GST_PLUGIN_SYSTEM_PATH_1_0 : ${prev.lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" gstPlugins}
+            '';
 
           doCheck = false;
 
