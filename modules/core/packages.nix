@@ -66,6 +66,14 @@
     discord
     vesktop
 
+    # Notes / productivity
+    notion-app-enhanced # NOT `notion` (unrelated tiling window manager) or
+    # `notion-app` (Linux unsupported in this nixpkgs pin, darwin-only)
+    obsidian
+
+    # Git GUI
+    github-desktop
+
     # Remote desktop: wayvnc is the server (see hyprland.conf's exec-once
     # for how it's started), tigervnc provides the vncviewer client for
     # connecting out to other VNC servers.
