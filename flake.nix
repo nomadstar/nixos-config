@@ -101,7 +101,7 @@
     {
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit fluxcast; };
+        specialArgs = { inherit fluxcast dotfiles; };
         modules = [
           ./hosts/desktop/default.nix
           sops-nix.nixosModules.sops
@@ -117,7 +117,7 @@
 
       nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit fluxcast; };
+        specialArgs = { inherit fluxcast dotfiles; };
         modules = [
           ./hosts/laptop/default.nix
           sops-nix.nixosModules.sops

@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, dotfiles, ... }:
 
 let
   cfg = config.desktop.greeter;
@@ -63,11 +63,96 @@ in
         greeting_msg = "Welcome you wonderful person!";
       };
       widget.clock = { format = "%A, %d %B % %H:%M"; };
+      background = {
+        path = "${dotfiles}/wallpapers/matrix.png";
+        fit = "Cover";
+      };
     };
 
     font = {
       name = "Cantarell";
       size = 16;
     };
+
+    cursorTheme = {
+      package = pkgs.matrix-cursors;
+      name = "matrix-cursors";
+    };
+
+    # Matrix-green-on-black to match the desktop theme instead of stock
+    # Adwaita gray. Selectors are the widget names/classes ReGreet's
+    # relm4 templates set - see src/gui/templates.rs upstream.
+    extraCss = ''
+      window {
+        background-color: #000000;
+      }
+
+      frame.background {
+        background-color: rgba(0, 20, 0, 0.8);
+        border: 1px solid #00ff41;
+        border-radius: 10px;
+        color: #00ff41;
+      }
+
+      #clock_frame {
+        color: #00ff41;
+        font-family: monospace;
+        font-size: 20px;
+        padding: 4px 20px;
+      }
+
+      label {
+        color: #00ff41;
+      }
+
+      entry {
+        background-color: #001a00;
+        color: #00ff41;
+        border: 1px solid #00ff41;
+        caret-color: #00ff41;
+      }
+
+      entry:focus-within {
+        border-color: #66ff9c;
+        box-shadow: 0 0 6px #00ff41;
+      }
+
+      button {
+        color: #00ff41;
+        border: 1px solid #00ff41;
+        background-color: #001a00;
+      }
+
+      button:hover {
+        background-color: #00330a;
+      }
+
+      #login_button.suggested-action {
+        background-color: #00ff41;
+        color: #000000;
+        font-weight: bold;
+      }
+
+      #login_button.suggested-action:hover {
+        background-color: #00cc35;
+      }
+
+      #reboot_button.destructive-action,
+      #poweroff_button.destructive-action {
+        color: #ff5555;
+        border-color: #ff5555;
+        background-color: #1a0000;
+      }
+
+      #notif_info {
+        background-color: rgba(0, 20, 0, 0.9);
+        color: #00ff41;
+        border: 1px solid #00ff41;
+      }
+
+      #notif_label {
+        color: #00ff41;
+      }
+    '';
   };
 }
