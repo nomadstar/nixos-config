@@ -10,6 +10,11 @@
   networking.hostName = "nanixos";
   time.timeZone = "America/Santiago";
 
+  # This laptop's internal panel enumerates as eDP-1, not the desktop's
+  # DP-1 - see modules/desktop/regreet.nix for why a mismatch here makes
+  # greetd crash-loop (sway ends up with every output disabled).
+  desktop.greeter.output = "eDP-1";
+
   i18n.defaultLocale = "es_CL.UTF-8";
   console = {
     font = "Lat2-Terminus16";

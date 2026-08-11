@@ -1,9 +1,8 @@
 { config, lib, pkgs, ... }:
 
 let
-  # Physical output the greeter should render on. Must match a monitor name
-  # from home/hypr/monitors.conf (DP-1 is the primary 1920x1080 panel).
-  greeterOutput = "DP-1";
+  cfg = config.desktop.greeter;
+  greeterOutput = cfg.output;
 
   # cage (regreet's default compositor) can only span every output ("-m
   # extend", the default - the greeter gets stretched across both screens as
@@ -19,13 +18,24 @@ let
   '';
 in
 {
-  services.greetd = {
+  options.desktop.greeter.output = lib.mkOption {
+    type = lib.types.str;
+    default = "DP-1";
+    description = ''
+      Physical output the greeter should render on. Must match a real
+      monitor name for this host (see home/hypr/monitors.conf) - if it
+      doesn't exist, sway's `output * disable` leaves every real output
+      disabled and the greeter fails to create a session.
+    '';
+  };
+
+  config.services.greetd = {
     enable = true;
     settings.default_session.command =
       "${lib.getExe' pkgs.dbus "dbus-run-session"} ${lib.getExe pkgs.sway} --config ${greetdSwayConfig}";
   };
 
-  programs.regreet = {
+  config.programs.regreet = {
     enable = true;
 
     settings = {
