@@ -20,13 +20,6 @@
   xdg.configFile."wofi/config".source = "${dotfiles}/wofi/config";
   xdg.configFile."wofi/style.css".source = "${dotfiles}/wofi/style.css";
 
-  # Nix store paths for Hyprland plugins move on every rebuild, so this
-  # can't live as static text in the dotfiles repo like hyprland.conf does -
-  # it's generated here and sourced from hyprland.conf instead.
-  xdg.configFile."hypr/nix-plugins.conf".text = ''
-    plugin = ${pkgs.hyprlandPlugins.hyprexpo}/lib/libhyprexpo.so
-  '';
-
   # Personal Neovim (NvChad-based) config from the `nvimConfig` flake input -
   # whole-directory symlink, same reasoning as the dotfiles entries above.
   xdg.configFile."nvim".source = "${nvimConfig}";
