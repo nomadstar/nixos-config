@@ -74,6 +74,13 @@
     # Git GUI
     github-desktop
 
+    # Secret Service (org.freedesktop.secrets) provider for apps that store
+    # credentials (github-desktop, browsers, ...) - no GNOME/KDE session
+    # here to supply one, so it needs to be started explicitly (see
+    # hyprland.conf's exec-once) with Secret Service integration enabled
+    # once in its own Settings.
+    keepassxc
+
     # Remote desktop: wayvnc is the server (see hyprland.conf's exec-once
     # for how it's started), tigervnc provides the vncviewer client for
     # connecting out to other VNC servers.
