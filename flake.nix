@@ -4,6 +4,14 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
 
+    # Rolling/bleeding-edge nixpkgs, kept separate from the stable `nixpkgs`
+    # above. The base system stays on 25.11 for reliability; `pkgsUnstable`
+    # (below) is for opting individual fast-moving packages into newer
+    # versions instead - see the ai devShell's opencode/ollama for the
+    # pattern. Not `nixpkgs.follows`-ed to anything, on purpose: it's meant
+    # to actually drift from the pinned stable revision.
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
     home-manager.url = "github:nix-community/home-manager/release-25.11";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -43,7 +51,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, dotfiles, nvimConfig, sops-nix, claude-code, antigravity-nix, fluxcast, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, dotfiles, nvimConfig, sops-nix, claude-code, antigravity-nix, fluxcast, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -53,6 +61,12 @@
       # therefore nixosConfigurations) stays unfree-free unless you decide
       # otherwise for the whole system.
       pkgsUnfree = import nixpkgs { inherit system; config.allowUnfree = true; };
+
+      # Deliberately bleeding-edge, for individual packages that are worth
+      # tracking closely (see "Package freshness" in the README). Nothing
+      # is pulled from here by default - it's opt-in per package, per
+      # devShell/module, same spirit as pkgsUnfree above.
+      pkgsUnstable = nixpkgs-unstable.legacyPackages.${system};
 
       # GPU policy for the ai devShell, per host: NVIDIA -> CUDA, AMD -> ROCm,
       # anything else (no dGPU, Intel-only, etc.) -> no GPU packages added.
@@ -72,11 +86,16 @@
             python3
             python3Packages.pip
             python3Packages.virtualenv
-            ollama
             claude-code.packages.${system}.default
-            opencode
             antigravity-nix.packages.${system}.google-antigravity-cli
-          ] ++ gpuPackages;
+          ] ++ (with pkgsUnstable; [
+            # These two ship new releases often enough that waiting for
+            # them to land in nixos-25.11 means running months-old
+            # versions - pulled from pkgsUnstable instead of pkgs on
+            # purpose. Everything else in this shell stays on stable.
+            ollama
+            opencode
+          ]) ++ gpuPackages;
         };
     in
     {

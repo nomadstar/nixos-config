@@ -14,13 +14,15 @@ visual theme across the terminal, GTK apps, wallpaper, and boot.
 
 ```
 nixos-config/
-├── flake.nix / flake.lock   Entry point. Inputs: nixpkgs (25.11), home-manager,
-│                             sops-nix, dotfiles + nvimConfig (this machine's
-│                             personal configs, see home/ and nvim/ below), and
-│                             three CLI/IDE-only flakes not in nixpkgs:
-│                             claude-code, antigravity-nix (agy CLI + IDE),
-│                             fluxcast (packaged from source in-repo, see
-│                             modules/core/fluxcast.nix).
+├── flake.nix / flake.lock   Entry point. Inputs: nixpkgs (25.11, stable - the
+│                             base system), nixpkgs-unstable (rolling, opt-in
+│                             per package - see Package freshness below),
+│                             home-manager, sops-nix, dotfiles + nvimConfig
+│                             (this machine's personal configs, see home/ and
+│                             nvim/ below), and three CLI/IDE-only flakes not
+│                             in nixpkgs: claude-code, antigravity-nix (agy
+│                             CLI + IDE), fluxcast (packaged from source
+│                             in-repo, see modules/core/fluxcast.nix).
 ├── hosts/
 │   ├── desktop/               Host-specific: hostname, timezone, locale, hardware
 │   │   ├── default.nix        (disk UUIDs), and the home-manager wiring for this host.
@@ -108,6 +110,36 @@ last pinned - this has bitten this exact workflow before.
 | `desktop` | Active, daily driver | UEFI, GRUB (os-prober enabled for a dual-boot Windows install), NVMe root, separate ext4 `/home` disk |
 | `laptop` | Active | Victus by HP Gaming Laptop 15-fa1xxx, Intel i5-12450H + NVIDIA RTX 2050 (Ampere, GA107) hybrid graphics, single ext4 root |
 
+## Keeping both hosts in sync
+
+There's no separate "sync" step to run - `desktop` and `laptop` already
+share every file under `modules/` (and the `home/`/`nvim/` submodules) as-is.
+A change made and pushed while sitting at one machine becomes available to
+the other the moment it pulls this repo. What's genuinely per-host and
+*never* carries over: `hosts/<name>/hardware-configuration.nix`, disk
+layout, and which GPU-specific devShell variant applies (`ai` vs
+`ai-laptop`) - everything else in `modules/core`/`modules/desktop` is
+identical for both on purpose.
+
+To bring changes made on one machine over to the other:
+
+```sh
+# on the machine you DIDN'T edit on:
+cd nixos-config
+git pull
+git submodule update --init --recursive   # only needed if you'll edit home/ or nvim/
+                                           # locally too - the build itself resolves
+                                           # them from flake.lock, not the checkout
+sudo nixos-rebuild build --flake .#<this-host>   # verify first
+sudo nixos-rebuild switch --flake .#<this-host>
+```
+
+If what changed lives in `home/` or `nvim/` (not just `nixos-config` itself),
+a plain `git pull` here is enough - those commits are already referenced by
+`flake.lock`, which travels with the normal `git pull`. You only need the
+two/three-repo push-then-repin dance from the section above when you're the
+one making the `home/`/`nvim/` edit in the first place.
+
 ## Rebuilding this machine
 
 ```sh
@@ -159,8 +191,9 @@ Tooling for specific domains (AI/local LLM work, GUI editors, pentesting,
 SDR) is **not** installed into the base system. Instead:
 
 ```sh
-nix develop .#ai         # python, ollama, claude (Claude Code CLI), opencode,
-                          # agy (Antigravity CLI), ROCm diagnostics (rocminfo, rocm-smi)
+nix develop .#ai         # python, claude (Claude Code CLI), agy (Antigravity CLI),
+                          # ollama + opencode (from nixpkgs-unstable, see Package
+                          # freshness below), ROCm diagnostics (rocminfo, rocm-smi)
 nix develop .#ai-laptop  # same, with CUDA instead of ROCm (laptop's NVIDIA GPU)
 nix develop .#developer  # VS Code + Antigravity IDE - GUI editors, kept out of
                           # both the base system and the ai shell since they're
@@ -197,6 +230,35 @@ configured at the NixOS level yet - see roadmap.
 
 System-wide GPU acceleration (`hardware.graphics.enable`, ROCm OpenCL ICDs)
 isn't enabled yet at the NixOS level - see roadmap.
+
+### Package freshness
+
+The base system tracks `nixos-25.11` (stable): frozen at release, only
+security/critical-bug backports, and even that only moves when someone runs
+`nix flake update` - a flake input pinned to a branch name still resolves to
+one exact commit in `flake.lock` until it's explicitly bumped. Neither
+`nix develop` nor `nixos-rebuild switch` ever silently pulls anything newer
+on their own.
+
+For packages that ship new releases often enough that waiting for `nixos-
+25.11` (or even remembering to bump its pin regularly) means running
+noticeably stale versions, `flake.nix` also has `nixpkgs-unstable` (the
+rolling channel) as `pkgsUnstable`, used opt-in per package rather than for
+the whole system:
+
+```nix
+] ++ (with pkgsUnstable; [
+  ollama
+  opencode
+]) ++ gpuPackages;
+```
+
+This is how `ollama`/`opencode` are sourced in the `ai` devShell. The
+pattern - `pkgsUnstable.<package>` instead of `pkgs.<package>` wherever it's
+referenced - extends to any other package, in any devShell or NixOS module,
+without touching the stable base. To actually move `pkgsUnstable` forward:
+`nix flake lock --update-input nixpkgs-unstable`, commit, rebuild/re-enter
+the shell.
 
 ## Matrix theme
 
