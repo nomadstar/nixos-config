@@ -1,8 +1,8 @@
 { config, lib, pkgs, ... }:
 
 {
-  # Needed for discord (official client is unfree). Everything else installed
-  # here stays free software; this is the one deliberate exception.
+  # Needed for discord and wpsoffice (both unfree). Everything else installed
+  # here stays free software; these are the deliberate exceptions.
   nixpkgs.config.allowUnfree = true;
 
   programs.git.enable = true;
@@ -65,5 +65,15 @@
     # Chat - both clients installed on purpose (same account, pick per use)
     discord
     vesktop
+
+    # Remote desktop (VNC server for wlroots compositors - see
+    # hyprland.conf's exec-once for how it's started)
+    wayvnc
+
+    # Office suite (unfree, hence allowUnfree above)
+    wpsoffice
+
+    # Screen recording / streaming
+    obs-studio
   ];
 }
