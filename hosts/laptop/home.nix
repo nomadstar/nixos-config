@@ -17,6 +17,8 @@
   xdg.configFile."waybar/config.jsonc".source = "${dotfiles}/waybar/config.jsonc";
   xdg.configFile."waybar/style.css".source = "${dotfiles}/waybar/style.css";
   xdg.configFile."wallpapers/matrix.png".source = "${dotfiles}/wallpapers/matrix.png";
+  xdg.configFile."wofi/config".source = "${dotfiles}/wofi/config";
+  xdg.configFile."wofi/style.css".source = "${dotfiles}/wofi/style.css";
 
   # Personal Neovim (NvChad-based) config from the `nvimConfig` flake input -
   # whole-directory symlink, same reasoning as the dotfiles entries above.
