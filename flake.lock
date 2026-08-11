@@ -40,11 +40,11 @@
     "dotfiles": {
       "flake": false,
       "locked": {
-        "lastModified": 1786419118,
-        "narHash": "sha256-jq/pWYhudvStMxe+D/wmng4WHm+i+Hlx3/XWgNySGug=",
+        "lastModified": 1786419931,
+        "narHash": "sha256-Av9gvxwCVmAoC3bM985Ao0EAsZ+kjTVb1Ey7lAcXeK0=",
         "owner": "nomadstar",
         "repo": "dotfiles",
-        "rev": "e417a8a44b0fc2d0d872b488cd9ec6b77b638c3b",
+        "rev": "f1a5a8ec38dd8cbe0289318bc954276e4dbfe70d",
         "type": "github"
       },
       "original": {
@@ -68,6 +68,23 @@
       "original": {
         "owner": "numtide",
         "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "fluxcast": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786054205,
+        "narHash": "sha256-VRzJPO5F+LAyNp9KtO1MC7nnqhHbOpN+p464waGTjAk=",
+        "owner": "IlyaP358",
+        "repo": "fluxcast",
+        "rev": "9d27c39670940ada3a0e520a1d70574910646083",
+        "type": "github"
+      },
+      "original": {
+        "owner": "IlyaP358",
+        "ref": "v0.2.2",
+        "repo": "fluxcast",
         "type": "github"
       }
     },
@@ -161,6 +178,7 @@
         "antigravity-nix": "antigravity-nix",
         "claude-code": "claude-code",
         "dotfiles": "dotfiles",
+        "fluxcast": "fluxcast",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs_3",
         "nvimConfig": "nvimConfig",

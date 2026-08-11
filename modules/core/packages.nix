@@ -66,14 +66,21 @@
     discord
     vesktop
 
-    # Remote desktop (VNC server for wlroots compositors - see
-    # hyprland.conf's exec-once for how it's started)
+    # Remote desktop: wayvnc is the server (see hyprland.conf's exec-once
+    # for how it's started), tigervnc provides the vncviewer client for
+    # connecting out to other VNC servers.
     wayvnc
+    tigervnc
 
     # Office suite (unfree, hence allowUnfree above)
     wpsoffice
 
     # Screen recording / streaming
     obs-studio
+
+    # Wireless display casting to Smart TVs (Miracast/WFD, DLNA, Chromecast).
+    # Beta/community project (see modules/core/fluxcast.nix) - run
+    # `fluxcast --doctor` first to check what's actually usable here.
+    fluxcast
   ];
 }
