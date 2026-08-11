@@ -30,6 +30,18 @@
     accent-color = "green";
   };
 
+  # Matrix-green cursor (see modules/desktop/matrix-cursors.nix for how the
+  # theme itself is built). gtk/x11 here cover GTK apps and XWayland; the
+  # Wayland-native cursor Hyprland itself draws is set via `env =` in
+  # hyprland.conf instead, since that's what wlroots actually reads.
+  home.pointerCursor = {
+    package = pkgs.matrix-cursors;
+    name = "matrix-cursors";
+    size = 12;
+    gtk.enable = true;
+    x11.enable = true;
+  };
+
   programs.bash.enable = true;
   programs.oh-my-posh = {
     enable = true;
