@@ -9,12 +9,30 @@ let
   # one stitched framebuffer) or pin to whichever output the kernel happens
   # to enumerate last ("-m last") - it has no flag to pick an output by
   # name. Sway does, so it's used here as a throwaway single-purpose
-  # compositor: disable every output, re-enable only greeterOutput, run
-  # regreet, then quit sway once regreet exits.
+  # compositor: disable every output, re-enable only one, run regreet, then
+  # quit sway once regreet exits.
+  #
+  # Which output to enable is picked at runtime rather than baked into a
+  # static `output NAME enable` line: prefer greeterOutput, but if it isn't
+  # actually connected on this host (wrong name, docked/undocked, hardware
+  # swap, ...) fall back to whatever sway does see instead of leaving every
+  # output disabled - that's what turned a naming mismatch into a greetd
+  # crash-loop before.
+  greetdSwaySetupOutput = pkgs.writeShellScript "greetd-sway-setup-output" ''
+    set -eu
+    chosen=$(${lib.getExe' pkgs.sway "swaymsg"} -t get_outputs -r \
+      | ${lib.getExe pkgs.jq} -r --arg pref ${lib.escapeShellArg greeterOutput} \
+        '(map(select(.name == $pref)) + .) | .[0].name // empty')
+    if [ -z "$chosen" ]; then
+      echo "greetd-sway-setup-output: no outputs found" >&2
+      exit 1
+    fi
+    ${lib.getExe' pkgs.sway "swaymsg"} output '*' disable
+    ${lib.getExe' pkgs.sway "swaymsg"} output "$chosen" enable
+  '';
+
   greetdSwayConfig = pkgs.writeText "greetd-sway-config" ''
-    output * disable
-    output ${greeterOutput} enable
-    exec "${lib.getExe config.programs.regreet.package}; swaymsg exit"
+    exec "${greetdSwaySetupOutput}; ${lib.getExe config.programs.regreet.package}; swaymsg exit"
   '';
 in
 {
@@ -22,10 +40,11 @@ in
     type = lib.types.str;
     default = "DP-1";
     description = ''
-      Physical output the greeter should render on. Must match a real
-      monitor name for this host (see home/hypr/monitors.conf) - if it
-      doesn't exist, sway's `output * disable` leaves every real output
-      disabled and the greeter fails to create a session.
+      Physical output the greeter should prefer rendering on (see
+      home/hypr/monitors.conf for real monitor names on this host). If it
+      isn't actually connected, greetd-sway-setup-output falls back to
+      whatever output sway does see, so a stale/wrong name here degrades
+      to "some output" instead of crash-looping greetd.
     '';
   };
 
