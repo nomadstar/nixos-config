@@ -16,14 +16,26 @@
       flake = false;
     };
 
+    # Personal Neovim (NvChad-based) config, also linked in as the nvim/ git
+    # submodule for `git clone --recurse-submodules` - same reasoning as
+    # `dotfiles` above.
+    nvimConfig = {
+      url = "github:nomadstar/starter";
+      flake = false;
+    };
+
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
     # Claude Code CLI, for the ai devShell. Not in nixpkgs.
     claude-code.url = "github:ryoppippi/nix-claude-code";
+
+    # Google Antigravity IDE + `agy` CLI, for the ai/developer devShells. Not
+    # in nixpkgs; this flake pins its own nixpkgs with allowUnfree already set.
+    antigravity-nix.url = "github:jacopone/antigravity-nix";
   };
 
-  outputs = { self, nixpkgs, home-manager, dotfiles, sops-nix, claude-code, ... }:
+  outputs = { self, nixpkgs, home-manager, dotfiles, nvimConfig, sops-nix, claude-code, antigravity-nix, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -54,6 +66,8 @@
             python3Packages.virtualenv
             ollama
             claude-code.packages.${system}.default
+            opencode
+            antigravity-nix.packages.${system}.google-antigravity-cli
           ] ++ gpuPackages;
         };
     in
@@ -67,7 +81,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit dotfiles; };
+            home-manager.extraSpecialArgs = { inherit dotfiles nvimConfig; };
             home-manager.users.nanixtus = import ./hosts/desktop/home.nix;
           }
         ];
@@ -82,7 +96,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit dotfiles; };
+            home-manager.extraSpecialArgs = { inherit dotfiles nvimConfig; };
             home-manager.users.nanixtus = import ./hosts/laptop/home.nix;
           }
         ];
@@ -105,6 +119,17 @@
         sdr = pkgs.mkShell {
           name = "sdr-devshell";
           packages = with pkgs; [ rtl-sdr gqrx gnuradio ];
+        };
+
+        # GUI editors/IDEs, kept out of the ai devShell (and off the system
+        # entirely) since they're heavy and only needed on demand. vscode is
+        # unfree, hence pkgsUnfree instead of pkgs here.
+        developer = pkgs.mkShell {
+          name = "developer-devshell";
+          packages = [
+            pkgsUnfree.vscode
+            antigravity-nix.packages.${system}.google-antigravity-ide
+          ];
         };
       };
     };

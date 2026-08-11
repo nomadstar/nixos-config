@@ -1,9 +1,17 @@
 { config, lib, pkgs, ... }:
 
 {
+  # Needed for discord (official client is unfree). Everything else installed
+  # here stays free software; this is the one deliberate exception.
+  nixpkgs.config.allowUnfree = true;
+
   programs.git.enable = true;
   programs.neovim.enable = true;
   programs.mtr.enable = true;
+
+  # dconf/gsettings backend for GTK4/libadwaita apps (accent color, dark
+  # mode, ...) - not pulled in automatically outside of GNOME.
+  programs.dconf.enable = true;
 
   # gvfs backs Nemo's trash, network mounts (smb://, sftp://) and
   # removable-media auto-mount.
@@ -47,5 +55,15 @@
     nethogs
     tcpdump
     iperf3
+
+    # Wayland wallpaper daemon for hyprland.conf's exec-once
+    hyprpaper
+
+    # Audio control (PipeWire/Wireplumber native GUI)
+    pwvucontrol
+
+    # Chat - both clients installed on purpose (same account, pick per use)
+    discord
+    vesktop
   ];
 }

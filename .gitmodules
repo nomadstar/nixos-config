@@ -1,3 +1,6 @@
 [submodule "home"]
 	path = home
 	url = https://github.com/nomadstar/dotfiles.git
+[submodule "nvim"]
+	path = nvim
+	url = https://github.com/nomadstar/starter.git

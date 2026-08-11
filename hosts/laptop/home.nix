@@ -1,4 +1,4 @@
-{ pkgs, lib, dotfiles, ... }:
+{ pkgs, lib, dotfiles, nvimConfig, ... }:
 
 {
   home.username = "nanixtus";
@@ -11,10 +11,31 @@
   xdg.configFile."hypr/hyprland.conf".source = "${dotfiles}/hypr/hyprland.conf";
   xdg.configFile."hypr/workspaces.conf".source = "${dotfiles}/hypr/workspaces.conf";
   xdg.configFile."hypr/hypremoji.conf".source = "${dotfiles}/hypr/hypremoji.conf";
+  xdg.configFile."hypr/hyprpaper.conf".source = "${dotfiles}/hypr/hyprpaper.conf";
   xdg.configFile."alacritty/alacritty.toml".source = "${dotfiles}/alacritty/alacritty.toml";
   xdg.configFile."nwg-displays/config".source = "${dotfiles}/nwg-displays/config";
   xdg.configFile."waybar/config.jsonc".source = "${dotfiles}/waybar/config.jsonc";
   xdg.configFile."waybar/style.css".source = "${dotfiles}/waybar/style.css";
+  xdg.configFile."wallpapers/matrix.png".source = "${dotfiles}/wallpapers/matrix.png";
+
+  # Personal Neovim (NvChad-based) config from the `nvimConfig` flake input -
+  # whole-directory symlink, same reasoning as the dotfiles entries above.
+  xdg.configFile."nvim".source = "${nvimConfig}";
+
+  # Dark theme + green accent for GTK4/libadwaita apps (regreet, nemo, ...).
+  # Needs `programs.dconf.enable` at the NixOS level (see modules/core) for
+  # the dconf/gsettings backend to exist under Hyprland.
+  dconf.settings."org/gnome/desktop/interface" = {
+    color-scheme = "prefer-dark";
+    accent-color = "green";
+  };
+
+  programs.bash.enable = true;
+  programs.oh-my-posh = {
+    enable = true;
+    enableBashIntegration = true;
+    settings = builtins.fromJSON (builtins.readFile ../oh-my-posh-matrix.json);
+  };
 
   # monitors.conf is intentionally *not* managed above: nwg-displays (the
   # Display Settings app) rewrites it in place whenever monitor layout
