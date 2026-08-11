@@ -39,7 +39,7 @@
   home.pointerCursor = {
     package = pkgs.matrix-cursors;
     name = "matrix-cursors";
-    size = 12;
+    size = 32;
     gtk.enable = true;
     x11.enable = true;
   };
