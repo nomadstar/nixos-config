@@ -1,6 +1,11 @@
 keys:
   - &host_desktop age1s4ms5uf3y9n58d2x0ygcj7zsjzucprh36upftludzeu9mhw0j9lqn9v76a
   - &host_laptop age14l23we4zgfcv5dq0cettvsd8jpgd0cfhyh6sa2qkl840xnz9253qhczrnu
+  # Personal recovery key, not tied to any host's lifecycle - lets a new
+  # machine be onboarded (or secrets recovered) even if every existing host
+  # is gone. Private half lives in ~/.config/sops/age/keys.txt, backed up
+  # in KeePassXC - never commit it.
+  - &admin_nanixtus age1jslkcnzsl6qm547cn5a9u4qyfjz7d208n3k5lpy50hjls3ydk5zsznemy4
 
 creation_rules:
   - path_regex: secrets/.*\.yaml$
@@ -8,3 +13,4 @@ creation_rules:
       - age:
           - *host_desktop
           - *host_laptop
+          - *admin_nanixtus
