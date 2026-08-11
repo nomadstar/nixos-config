@@ -40,11 +40,11 @@
     "dotfiles": {
       "flake": false,
       "locked": {
-        "lastModified": 1786410423,
-        "narHash": "sha256-N9euX6VXfVcSVhKtx1BBFnTqeKRXVBZUpvbGTLHyiNU=",
+        "lastModified": 1786416072,
+        "narHash": "sha256-Mn9/WQaXoKFoXoCYpEmPYlpqMdGmOqm8U+uq1mqEhSc=",
         "owner": "nomadstar",
         "repo": "dotfiles",
-        "rev": "f76cd34b47a44b4c59d259f57c4acbd89c842feb",
+        "rev": "da89d2b20c23456668f9f3ba0fae069cf57aa900",
         "type": "github"
       },
       "original": {
