@@ -67,9 +67,18 @@
     vesktop
 
     # Notes / productivity
-    notion-app-enhanced # NOT `notion` (unrelated tiling window manager) or
-    # `notion-app` (Linux unsupported in this nixpkgs pin, darwin-only)
     obsidian
+
+    # Notion has no real Linux client. notion-app-enhanced (tried first)
+    # bundles a fossilized Electron 11/Chrome 87 that Notion's web app now
+    # refuses to load ("browser is not compatible") - and it's stuck there,
+    # nixpkgs-unstable pins the same dead upstream release. chromium here
+    # exists to run it as a `--app=` window instead (see hosts/*/home.nix's
+    # xdg.desktopEntries.notion) - an actually-maintained browser engine.
+    chromium
+
+    # Privacy-focused browsing over the Tor network
+    tor-browser
 
     # Git GUI
     github-desktop

@@ -44,6 +44,17 @@
     x11.enable = true;
   };
 
+  # Notion as a Chromium "app window" (own window/taskbar entry, no address
+  # bar) instead of an Electron wrapper - see modules/core/packages.nix for
+  # why notion-app-enhanced was dropped.
+  xdg.desktopEntries.notion = {
+    name = "Notion";
+    genericName = "Notes";
+    exec = "chromium --app=https://www.notion.so --name=Notion --class=Notion";
+    terminal = false;
+    categories = [ "Office" ];
+  };
+
   programs.bash.enable = true;
   programs.oh-my-posh = {
     enable = true;
