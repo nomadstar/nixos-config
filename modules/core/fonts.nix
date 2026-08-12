@@ -13,28 +13,22 @@
     fira-code
     source-code-pro
     cascadia-code
-    hack
+    hack-font
 
     # CJK Fonts
-    noto-fonts-cjk
-    noto-fonts-emoji
+    noto-fonts-cjk-sans
+    noto-fonts-color-emoji
 
     # Icons
     material-design-icons
-    noto-cjk
 
     # Arabic
     amiri
-    # Other common Arabic fonts
-    noto-sans-arabic
-    tahoma
 
     # System Fonts
     dejavu_fonts
-    liberation_fonts
-    freefont
-
-    wps-fonts
+    liberation_ttf
+    freefont_ttf
   ];
 
   fonts.fontconfig.enable = true;
