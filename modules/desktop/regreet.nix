@@ -50,8 +50,13 @@ in
 
   config.services.greetd = {
     enable = true;
+    # --unsupported-gpu: sway refuses to start at all when it sees the
+    # proprietary NVIDIA driver loaded (modules/hardware/nvidia-prime.nix),
+    # regardless of which GPU it actually renders on - this is only the
+    # greeter's throwaway compositor, not the user's Hyprland session, so
+    # sway's "don't report issues" caveat is fine to accept here.
     settings.default_session.command =
-      "${lib.getExe' pkgs.dbus "dbus-run-session"} ${lib.getExe pkgs.sway} --config ${greetdSwayConfig}";
+      "${lib.getExe' pkgs.dbus "dbus-run-session"} ${lib.getExe pkgs.sway} --unsupported-gpu --config ${greetdSwayConfig}";
   };
 
   config.programs.regreet = {
