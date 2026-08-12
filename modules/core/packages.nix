@@ -17,6 +17,13 @@
   # removable-media auto-mount.
   services.gvfs.enable = true;
 
+  # Enable XDG Desktop Portal (crucial for Wayland screen sharing)
+  xdg.portal.enable = true;
+  xdg.portal.extraPortals = [
+    pkgs.xdg-desktop-portal-gtk
+  ];
+  xdg.portal.config.common.default = "*";
+
   environment.systemPackages = with pkgs; [
     # Editors
     vim
@@ -107,4 +114,13 @@
     # `fluxcast --doctor` first to check what's actually usable here.
     fluxcast
   ];
-}
+
+  environment.sessionVariables.GST_PLUGIN_SYSTEM_PATH_1_0 = lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (with pkgs.gst_all_1; [
+    gstreamer 
+    gst-plugins-base
+    gst-plugins-good
+    gst-plugins-bad
+    gst-plugins-ugly
+    gst-libav
+    gst-vaapi
+  ]);
