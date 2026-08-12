@@ -28,6 +28,10 @@
     pulse.enable = true;
   };
 
+  # fluxcast (Miracast/Wi-Fi Direct casting to the Roku) needs this RTSP
+  # port reachable; NixOS's firewall blocks it by default.
+  networking.firewall.allowedTCPPorts = [ 7236 ];
+
   # This value should NOT be changed once set for this host.
   # See https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion
   system.stateVersion = "25.11";
