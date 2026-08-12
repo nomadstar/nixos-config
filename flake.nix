@@ -93,7 +93,7 @@
     {
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit dotfiles; };
+        specialArgs = { inherit dotfiles pkgsUnstable; };
         modules = [
           ./hosts/desktop/default.nix
           sops-nix.nixosModules.sops
@@ -109,7 +109,7 @@
 
       nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit dotfiles; };
+        specialArgs = { inherit dotfiles pkgsUnstable; };
         modules = [
           ./hosts/laptop/default.nix
           sops-nix.nixosModules.sops
