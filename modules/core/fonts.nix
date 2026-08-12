@@ -12,7 +12,6 @@
     # UI & Terminal
     fira-code
     source-code-pro
-    jet-brains-mono
     cascadia-code
     hack
 
