@@ -5,6 +5,7 @@
     ./hardware-configuration.nix
     ../../modules/core
     ../../modules/desktop
+    ../../modules/hardware/nvidia-prime.nix
   ];
 
   networking.hostName = "nanixos";
