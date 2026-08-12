@@ -71,23 +71,6 @@
         "type": "github"
       }
     },
-    "fluxcast": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1786054205,
-        "narHash": "sha256-VRzJPO5F+LAyNp9KtO1MC7nnqhHbOpN+p464waGTjAk=",
-        "owner": "IlyaP358",
-        "repo": "fluxcast",
-        "rev": "9d27c39670940ada3a0e520a1d70574910646083",
-        "type": "github"
-      },
-      "original": {
-        "owner": "IlyaP358",
-        "ref": "v0.2.2",
-        "repo": "fluxcast",
-        "type": "github"
-      }
-    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -194,7 +177,6 @@
         "antigravity-nix": "antigravity-nix",
         "claude-code": "claude-code",
         "dotfiles": "dotfiles",
-        "fluxcast": "fluxcast",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",

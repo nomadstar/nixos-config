@@ -109,10 +109,10 @@
     # Screen recording / streaming
     obs-studio
 
-    # Wireless display casting to Smart TVs (Miracast/WFD, DLNA, Chromecast).
-    # Beta/community project (see modules/core/fluxcast.nix) - run
-    # `fluxcast --doctor` first to check what's actually usable here.
-    fluxcast
+    # Wireless display casting to Smart TVs (Miracast/WFD). Replaced
+    # fluxcast - works, but currently drops the connection after a few
+    # seconds (still needs debugging).
+    gnome-network-displays
   ];
 
   environment.sessionVariables.GST_PLUGIN_SYSTEM_PATH_1_0 = lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (with pkgs.gst_all_1; [

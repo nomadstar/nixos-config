@@ -29,11 +29,11 @@
     pulse.enable = true;
   };
 
-  # fluxcast (Miracast/Wi-Fi Direct casting to the Roku) needs this RTSP
-  # port reachable; NixOS's firewall blocks it by default.
+  # Miracast/Wi-Fi Direct casting to the Roku (gnome-network-displays) needs
+  # this RTSP port reachable; NixOS's firewall blocks it by default.
   networking.firewall.allowedTCPPorts = [ 7236 ];
 
-  # Miracast/fluxcast needs Wi-Fi scan MAC randomization off (see
+  # Miracast needs Wi-Fi scan MAC randomization off (see
   # modules/desktop/wifi-panel.nix for why: no in-tree kernel driver,
   # including mt76/mt7921, declares
   # NL80211_EXT_FEATURE_MGMT_TX_RANDOM_TA_CONNECTED, so cfg80211 rejects

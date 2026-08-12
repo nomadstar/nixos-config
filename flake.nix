@@ -41,17 +41,9 @@
     # Google Antigravity IDE + `agy` CLI, for the ai/developer devShells. Not
     # in nixpkgs; this flake pins its own nixpkgs with allowUnfree already set.
     antigravity-nix.url = "github:jacopone/antigravity-nix";
-
-    # Wireless display casting (Miracast/WFD, DLNA, Chromecast). Not in
-    # nixpkgs; packaged from source in modules/core/fluxcast.nix. Pinned to
-    # a tag rather than a branch for reproducibility.
-    fluxcast = {
-      url = "github:IlyaP358/fluxcast/v0.2.2";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, dotfiles, nvimConfig, sops-nix, claude-code, antigravity-nix, fluxcast, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, dotfiles, nvimConfig, sops-nix, claude-code, antigravity-nix, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -101,7 +93,7 @@
     {
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit fluxcast dotfiles; };
+        specialArgs = { inherit dotfiles; };
         modules = [
           ./hosts/desktop/default.nix
           sops-nix.nixosModules.sops
@@ -117,7 +109,7 @@
 
       nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit fluxcast dotfiles; };
+        specialArgs = { inherit dotfiles; };
         modules = [
           ./hosts/laptop/default.nix
           sops-nix.nixosModules.sops

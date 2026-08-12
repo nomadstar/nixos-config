@@ -5,7 +5,7 @@
 #
 # Why this needs to be toggleable at all: NixOS's networkmanager module
 # defaults wifi.scanRandMacAddress to true (see hosts/laptop/default.nix
-# for the "why" - it breaks Miracast/fluxcast P2P GO Negotiation, because
+# for the "why" - it breaks Miracast P2P GO Negotiation, because
 # no in-tree kernel driver, including mt76/mt7921, declares
 # NL80211_EXT_FEATURE_MGMT_TX_RANDOM_TA_CONNECTED). The system default
 # stays secure (randomization on); this panel is how you drop it

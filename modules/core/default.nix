@@ -9,6 +9,5 @@
     ./packages.nix
     ./fonts.nix
     ./secrets.nix
-    ./fluxcast.nix
   ];
 }
