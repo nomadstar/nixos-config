@@ -2,7 +2,74 @@
 
 {
   fonts.packages = with pkgs; [
+    # General
+    font-awesome
+
+    # Nerd Fonts
     nerd-fonts.jetbrains-mono
     nerd-fonts.symbols-only
+
+    # UI & Terminal
+    fira-code
+    source-code-pro
+    jet-brains-mono
+    cascadia-code
+    hack
+
+    # CJK Fonts
+    noto-fonts-cjk
+    noto-fonts-emoji
+
+    # Icons
+    material-design-icons
+    noto-cjk
+
+    # Arabic
+    amiri
+    # Other common Arabic fonts
+    noto-sans-arabic
+    tahoma
+
+    # System Fonts
+    dejavu_fonts
+    liberation_fonts
+    freefont
+
+    wps-fonts
   ];
+
+  fonts.fontconfig.enable = true;
+
+  # Optional: Configure fallback fonts
+  fonts.fontconfig.extraConfig = ''
+    <alias>
+      <family>sans-serif</family>
+      <prefer>
+        <family>Noto Color Emoji</family>
+        <family>DejaVu Sans</family>
+      </prefer>
+    </alias>
+
+    <alias>
+      <family>serif</family>
+      <prefer>
+        <family>DejaVu Serif</family>
+      </prefer>
+    </alias>
+
+    <alias>
+      <family>monospace</family>
+      <prefer>
+        <family>JetBrains Mono Nerd Font</family>
+        <family>DejaVu Sans Mono</family>
+      </prefer>
+    </alias>
+
+    <alias>
+      <family>monospace</family>
+      <default>
+        <family>DejaVu Sans Mono</family>
+      </default>
+    </alias>
+  '';
 }
