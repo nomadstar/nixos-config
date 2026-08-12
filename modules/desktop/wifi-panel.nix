@@ -19,21 +19,30 @@
 # modules/hardware/backlight.nix's udev rule) instead of reaching for sudo.
 # NetworkManager merges conf.d/*.conf over the base file, so dropping a
 # file there overrides wifi.scan-rand-mac-address without touching
-# anything Nix manages; `nmcli general reload conf` picks it up live.
+# anything Nix manages.
+#
+# `nmcli general reload conf` alone is NOT enough - confirmed live via
+# kprobe tracing on 2026-08-12 that it doesn't change the source address
+# NetworkManager already picked for the p2p-dev-wlo1 device (that seems to
+# get decided once, when NetworkManager/the device starts). A full
+# `systemctl restart NetworkManager.service` does pick it up. That needs
+# a polkit rule (below) since regular users can't restart system units by
+# default - scoped to exactly this one unit for the networkmanager group,
+# same "narrow" spirit as the tmpfiles rule above.
 let
   macMarker = "/etc/NetworkManager/conf.d/99-wifi-mac-random-off.conf";
 
   wifiMacToggle = pkgs.writeShellApplication {
     name = "wifi-mac-toggle";
-    runtimeInputs = [ pkgs.networkmanager pkgs.libnotify ];
+    runtimeInputs = [ pkgs.systemd pkgs.libnotify ];
     text = ''
       if [ -f "${macMarker}" ]; then
         rm -f "${macMarker}"
-        nmcli general reload conf
+        systemctl restart NetworkManager.service
         notify-send "Wi-Fi" "Randomización de MAC (scan): ON (default)"
       else
         printf '[device]\nwifi.scan-rand-mac-address=false\n' > "${macMarker}"
-        nmcli general reload conf
+        systemctl restart NetworkManager.service
         notify-send "Wi-Fi" "Randomización de MAC (scan): OFF (Miracast)"
       fi
     '';
@@ -61,6 +70,19 @@ in
   systemd.tmpfiles.rules = [
     "d /etc/NetworkManager/conf.d 0775 root networkmanager -"
   ];
+
+  # Lets wifi-mac-toggle restart NetworkManager.service without a sudo
+  # password prompt (which wouldn't work from a waybar/wofi click anyway -
+  # no TTY to type it into). Scoped to this one unit and this one group.
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (action.id == "org.freedesktop.systemd1.manage-units" &&
+          action.lookup("unit") == "NetworkManager.service" &&
+          subject.isInGroup("networkmanager")) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
 
   environment.systemPackages = [ wifiMacToggle wifiPanel ];
 }
