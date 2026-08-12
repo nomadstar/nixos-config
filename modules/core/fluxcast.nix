@@ -142,10 +142,11 @@
 
             for i in $(seq 1 "$attempts"); do
               echo "== fluxcast-retry: intento $i/$attempts =="
-              if fluxcast "$@"; then
+              status=0
+              fluxcast "$@" || status=$?
+              if [ "$status" -eq 0 ]; then
                 exit 0
               fi
-              status=$?
               echo "== fluxcast-retry: intento $i fallo (exit $status), reintentando en 2s =="
               sleep 2
             done
