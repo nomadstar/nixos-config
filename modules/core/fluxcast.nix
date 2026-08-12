@@ -17,6 +17,16 @@
 # - This only installs the `fluxcast` command; nothing here auto-starts it
 #   or touches firewall/network config. Run `fluxcast --doctor` first to
 #   check what's actually available on a given machine.
+# - fluxcast-retry: a single WFD GO Negotiation Request is one unicast
+#   802.11 action frame off-channel, with no automatic retry - on a
+#   contended 2.4GHz channel (verified live with a monitor-mode capture:
+#   our own laptop's transmit attempt never even showed up on air, most
+#   likely lost to collisions among many overlapping neighbor networks)
+#   any single attempt can just lose that contention. fluxcast supports a
+#   fully non-interactive invocation (--monitor/--wfd-peer skip the
+#   pickers), so retrying the whole command is a cheap, effective
+#   workaround: each fresh attempt renegotiates from scratch, giving it
+#   another shot at an open slot on the channel.
 {
   # services.dbus.packages (not environment.etc) is how NixOS merges extra
   # policy fragments into /etc/dbus-1/system.d - environment.etc."dbus-1"
@@ -109,6 +119,44 @@
             mainProgram = "fluxcast";
           };
         };
+
+        fluxcast-retry = prev.writeShellApplication {
+          name = "fluxcast-retry";
+          runtimeInputs = [ final.fluxcast ];
+          text = ''
+            usage() {
+              echo "Uso: fluxcast-retry [--attempts N] -- <argumentos de fluxcast>" >&2
+              echo "Ejemplo: fluxcast-retry --attempts 10 -- --protocol wfd --monitor eDP-1 --wfd-peer 22:EF:BD:49:EB:35" >&2
+              exit 1
+            }
+
+            attempts=8
+            if [ "''${1:-}" = "--attempts" ]; then
+              attempts="''${2:?falta el número de intentos}"
+              shift 2
+            fi
+            if [ "''${1:-}" = "--" ]; then
+              shift
+            fi
+            [ $# -ge 1 ] || usage
+
+            for i in $(seq 1 "$attempts"); do
+              echo "== fluxcast-retry: intento $i/$attempts =="
+              if fluxcast "$@"; then
+                exit 0
+              fi
+              status=$?
+              echo "== fluxcast-retry: intento $i fallo (exit $status), reintentando en 2s =="
+              sleep 2
+            done
+
+            echo "== fluxcast-retry: se agotaron los $attempts intentos =="
+            exit 1
+          '';
+          meta.description = "Reintenta fluxcast --protocol wfd hasta que conecte, para canales 2.4GHz congestionados";
+        };
       })
   ];
+
+  environment.systemPackages = [ pkgs.fluxcast-retry ];
 }
