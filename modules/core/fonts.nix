@@ -41,35 +41,9 @@
   fonts.fontconfig.enable = true;
 
   # Optional: Configure fallback fonts
-  fonts.fontconfig.extraConfig = ''
-    <alias>
-      <family>sans-serif</family>
-      <prefer>
-        <family>Noto Color Emoji</family>
-        <family>DejaVu Sans</family>
-      </prefer>
-    </alias>
-
-    <alias>
-      <family>serif</family>
-      <prefer>
-        <family>DejaVu Serif</family>
-      </prefer>
-    </alias>
-
-    <alias>
-      <family>monospace</family>
-      <prefer>
-        <family>JetBrains Mono Nerd Font</family>
-        <family>DejaVu Sans Mono</family>
-      </prefer>
-    </alias>
-
-    <alias>
-      <family>monospace</family>
-      <default>
-        <family>DejaVu Sans Mono</family>
-      </default>
-    </alias>
-  '';
+  fonts.fontconfig.defaultFonts = {
+    sansSerif = [ "Noto Color Emoji" "DejaVu Sans" ];
+    serif = [ "DejaVu Serif" ];
+    monospace = [ "JetBrains Mono Nerd Font" "DejaVu Sans Mono" ];
+  };
 }
