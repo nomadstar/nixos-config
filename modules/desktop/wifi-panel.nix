@@ -1,7 +1,11 @@
 { config, lib, pkgs, ... }:
 
-# Wi-Fi settings dropdown for waybar (wofi-based). Currently has one
-# setting: Wi-Fi scan MAC randomization.
+# Wi-Fi settings dropdown for waybar (wofi-based), reached by
+# right-clicking the waybar "network" module - left-click on that same
+# module opens nm-connection-editor instead (see home/waybar/config.jsonc
+# and home/hypr/hyprland.conf's nm-applet exec-once, both in the `dotfiles`
+# submodule/flake input). Two entries: Wi-Fi scan MAC randomization, and a
+# shortcut to open/raise OpenSnitch (modules/desktop/opensnitch.nix).
 #
 # Why this needs to be toggleable at all: NixOS's networkmanager module
 # defaults wifi.scanRandMacAddress to true (see hosts/laptop/default.nix
@@ -48,20 +52,37 @@ let
     '';
   };
 
+  # Idempotent: opensnitch-ui (modules/desktop/opensnitch.nix) already runs
+  # continuously in the tray via hyprland.conf's exec-once, so this just
+  # raises it back to front instead of spawning a second instance.
+  opensnitchOpen = pkgs.writeShellApplication {
+    name = "opensnitch-open";
+    runtimeInputs = [ pkgs.procps pkgs.opensnitch-ui pkgs.libnotify ];
+    text = ''
+      if pgrep -x opensnitch-ui >/dev/null; then
+        notify-send "OpenSnitch" "Ya está corriendo - buscá el ícono en la bandeja (tray)"
+      else
+        opensnitch-ui &
+      fi
+    '';
+  };
+
   wifiPanel = pkgs.writeShellApplication {
     name = "wifi-panel";
-    runtimeInputs = [ pkgs.wofi wifiMacToggle ];
+    runtimeInputs = [ pkgs.wofi wifiMacToggle opensnitchOpen ];
     text = ''
       if [ -f "${macMarker}" ]; then
         mac_line="Randomización de MAC (scan): OFF -> click para activar (default seguro)"
       else
         mac_line="Randomización de MAC (scan): ON -> click para desactivar (necesario para Miracast)"
       fi
+      opensnitch_line="Abrir OpenSnitch (firewall de aplicaciones)"
 
-      choice=$(printf '%s\n' "$mac_line" | wofi --dmenu --prompt "Wi-Fi" --width 480 --height 120)
+      choice=$(printf '%s\n%s\n' "$mac_line" "$opensnitch_line" | wofi --dmenu --prompt "Wi-Fi" --width 480 --height 160)
 
       case "$choice" in
         "Randomización de MAC"*) wifi-mac-toggle ;;
+        "$opensnitch_line") opensnitch-open ;;
       esac
     '';
   };
@@ -84,5 +105,11 @@ in
     });
   '';
 
-  environment.systemPackages = [ wifiMacToggle wifiPanel ];
+  # nm-applet: tray icon + menu for switching/connecting Wi-Fi networks
+  # (autostarted via home/hypr/hyprland.conf's exec-once). nm-connection-editor:
+  # full connection settings window, opened directly by the waybar "network"
+  # module's left-click (home/waybar/config.jsonc) - nm-applet itself has no
+  # way to pop its menu on demand from outside its own tray icon, so this is
+  # the click target that's actually always clickable.
+  environment.systemPackages = [ wifiMacToggle opensnitchOpen wifiPanel pkgs.networkmanagerapplet ];
 }
