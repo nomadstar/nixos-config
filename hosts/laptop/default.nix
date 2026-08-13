@@ -7,6 +7,7 @@
     ../../modules/desktop
     ../../modules/hardware/nvidia-prime.nix
     ../../modules/hardware/backlight.nix
+    ../../modules/hardware/rtl-sdr.nix
   ];
 
   networking.hostName = "nanixos";

@@ -160,7 +160,7 @@
           name = "sdr-devshell";
           packages = with pkgs; [
             # Drivers / hardware
-            rtl-sdr hackrf airspy airspyhf soapysdr
+            rtl-sdr hackrf airspy airspyhf soapysdr uhd
           
             # GUI
             gqrx cubicsdr sdrpp
