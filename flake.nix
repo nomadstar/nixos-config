@@ -158,7 +158,28 @@
 
         sdr = pkgs.mkShell {
           name = "sdr-devshell";
-          packages = with pkgs; [ rtl-sdr gqrx gnuradio ];
+          packages = with pkgs; [
+            # Drivers / hardware
+            rtl-sdr hackrf airspy airspyhf soapysdr
+          
+            # GUI
+            gqrx cubicsdr sdrpp
+          
+            # Análisis / pentesting RF
+            urh inspectrum multimon-ng rtl_433 redsea dump1090
+          
+            # GNU Radio / DSP
+            gnuradio gr-osmosdr python3Full
+          
+            # Modos digitales
+            fldigi direwolf wsjtx
+          
+            # GPS / satélites
+            gps-sdr-sim gpsd gnss-sdr gpredict
+          
+            # Audio / utilidades
+            sox ffmpeg audacity pavucontrol
+          ];
         };
 
         # GUI editors/IDEs, kept out of the ai devShell (and off the system
