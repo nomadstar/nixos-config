@@ -138,21 +138,22 @@
             # Red
             nmap masscan netcat-gnu socat tcpdump wireshark tshark
             bettercap responder mitmproxy proxychains zap
-        
+
             # Recon / DNS / OSINT
             dnsutils whois dnsrecon amass theharvester whatweb
-        
+
             # Web
-            gobuster ffuf feroxbuster gobuster nikto nuclei sqlmap commix
-        
+            gobuster ffuf feroxbuster nikto nuclei sqlmap commix
+
             # Credenciales
-            hydra hashcat hashcat-utils john cewl crunch patator
-            
+            hydra hashcat hashcat-utils john cewl crunch
+            python3Packages.patator
+
             # Post-explotación / AD
             metasploit netexec impacket evil-winrm enum4linux-ng smbmap
-            
+
             # Utilidades
-            seclists jq ripgrep git curl python3Full pipx
+            seclists jq ripgrep git curl python3 pipx
           ];
         };
 
