@@ -136,7 +136,7 @@
           name = "pentest-devshell";
           packages = with pkgs; [
             # Red
-            nmap masscan netcat-gnu socat tcpdump wireshark tshark
+            nmap masscan netcat-gnu socat tcpdump
             bettercap responder mitmproxy proxychains zap
 
             # Recon / DNS / OSINT

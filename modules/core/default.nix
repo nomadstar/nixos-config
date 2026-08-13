@@ -9,5 +9,6 @@
     ./packages.nix
     ./fonts.nix
     ./secrets.nix
+    ./security.nix
   ];
 }
