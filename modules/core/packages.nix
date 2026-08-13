@@ -17,6 +17,15 @@
   # removable-media auto-mount.
   services.gvfs.enable = true;
 
+  # Wires glib-networking's TLS module into GIO_EXTRA_MODULES (plain
+  # environment.systemPackages does NOT do this - GIO_EXTRA_MODULES is only
+  # populated by NixOS modules that explicitly set
+  # environment.sessionVariables, same as services.gvfs/programs.dconf
+  # above). Without it, GIO falls back to GDummyTlsBackend and
+  # gnome-network-displays' Chromecast backend fails every connection at
+  # the TLS handshake ("El soporte de TSL no está disponible").
+  services.gnome.glib-networking.enable = true;
+
   # Enable XDG Desktop Portal (crucial for Wayland screen sharing)
   xdg.portal.enable = true;
   xdg.portal.extraPortals = [
