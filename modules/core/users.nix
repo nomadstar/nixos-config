@@ -9,6 +9,8 @@
     # to report caps lock / num lock state.
     # "wireshark" allows capturing packets via dumpcap without sudo.
     # "plugdev" allows access to SDR hardware.
-    extraGroups = [ "networkmanager" "wheel" "input" "wireshark" "plugdev" ];
+    # "libvirtd" allows managing/using qemu VMs (modules/core/virtualisation.nix)
+    # without sudo. podman is rootless and needs no group membership.
+    extraGroups = [ "networkmanager" "wheel" "input" "wireshark" "plugdev" "libvirtd" ];
   };
 }

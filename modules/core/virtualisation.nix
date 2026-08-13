@@ -1,0 +1,24 @@
+{ config, lib, pkgs, ... }:
+
+# VMs (qemu/KVM via libvirtd) and containers (podman), enabled system-wide
+# rather than left to a devShell: both need kernel/system-level integration
+# that doesn't work well from an isolated shell -
+# - libvirtd: /dev/kvm access, the libvirtd group, the virtlogd/virtqemud
+#   daemons that actually run the VMs.
+# - podman rootless: subuid/subgid ranges assigned to the user, which NixOS
+#   handles automatically for normal users but only takes effect through the
+#   system module, not a plain package.
+# Same reasoning as modules/core/security.nix's programs.wireshark.enable.
+{
+  virtualisation.libvirtd.enable = true;
+
+  virtualisation.podman = {
+    enable = true;
+    # docker-compatible CLI/socket, for tooling that still shells out to
+    # `docker` instead of `podman`.
+    dockerCompat = true;
+    defaultNetwork.settings.dns_enabled = true;
+  };
+
+  environment.systemPackages = [ pkgs.podman-compose ];
+}

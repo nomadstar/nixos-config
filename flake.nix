@@ -194,15 +194,16 @@
           ];
         };
 
-        # GUI editors/IDEs, kept out of the ai devShell (and off the system
-        # entirely) since they're heavy and only needed on demand. vscode is
-        # unfree, hence pkgsUnfree instead of pkgs here.
+        # GUI editors/IDEs plus the build/JS toolchain, kept out of the ai
+        # devShell (and off the system entirely) since they're heavy/version-
+        # sensitive per-project and only needed on demand. vscode is unfree,
+        # hence pkgsUnfree instead of pkgs here. nodejs bundles npm.
         developer = pkgs.mkShell {
           name = "developer-devshell";
           packages = [
             pkgsUnfree.vscode
             antigravity-nix.packages.${system}.google-antigravity-ide
-          ];
+          ] ++ (with pkgs; [ gcc cmake nodejs pnpm yarn ]);
         };
       };
     };
