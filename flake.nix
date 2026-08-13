@@ -157,6 +157,10 @@
           ];
           shellHook = ''
             export PATH="$HOME/.local/bin:$PATH"
+            # dumpcap del devshell no tiene CAP_NET_RAW/CAP_NET_ADMIN; anteponer
+            # /run/wrappers/bin para que Wireshark use el dumpcap con capabilities
+            # que instala programs.wireshark.enable (modules/core/security.nix).
+            export PATH="/run/wrappers/bin:$PATH"
             # Fallback: si nixpkgs no trae patator o impacket, pipx los instala
             command -v patator  >/dev/null 2>&1 || pipx install patator  >/dev/null 2>&1 || true
             command -v secretsdump.py >/dev/null 2>&1 || pipx install impacket >/dev/null 2>&1 || true
