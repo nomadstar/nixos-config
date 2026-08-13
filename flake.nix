@@ -143,7 +143,7 @@
             dnsutils whois dnsrecon amass theharvester whatweb
         
             # Web
-            gobuster ffuf feroxbuster dirsearch nikto nuclei sqlmap commix
+            gobuster ffuf feroxbuster gobuster nikto nuclei sqlmap commix
         
             # Credenciales
             hydra hashcat hashcat-utils john cewl crunch patator
