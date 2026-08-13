@@ -134,7 +134,26 @@
 
         pentest = pkgs.mkShell {
           name = "pentest-devshell";
-          packages = with pkgs; [ nmap wireshark gobuster hydra sqlmap netcat-gnu ];
+          packages = with pkgs; [
+            # Red
+            nmap masscan netcat-gnu socat tcpdump wireshark tshark
+            bettercap responder mitmproxy proxychains zap
+        
+            # Recon / DNS / OSINT
+            dnsutils whois dnsrecon amass theharvester whatweb
+        
+            # Web
+            gobuster ffuf feroxbuster dirsearch nikto nuclei sqlmap commix
+        
+            # Credenciales
+            hydra hashcat hashcat-utils john cewl crunch patator
+            
+            # Post-explotación / AD
+            metasploit netexec impacket evil-winrm enum4linux-ng smbmap
+            
+            # Utilidades
+            seclists jq ripgrep git curl python3Full pipx
+          ];
         };
 
         sdr = pkgs.mkShell {
