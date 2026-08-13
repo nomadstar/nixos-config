@@ -11,6 +11,7 @@
     ./wifi-panel.nix
     ./opensnitch.nix
     ./devshell-picker.nix
+    ./qt-theme.nix
   ];
 
   programs.firefox.enable = true;
