@@ -137,7 +137,7 @@
           packages = with pkgs; [
             # Red
             nmap masscan netcat-gnu socat tcpdump
-            bettercap responder mitmproxy proxychains zap
+            bettercap responder mitmproxy proxychains zap wireshark
 
             # Recon / DNS / OSINT
             dnsutils whois dnsrecon amass theharvester whatweb
