@@ -147,7 +147,6 @@
 
             # Credenciales
             hydra hashcat hashcat-utils john cewl crunch
-            python3Packages.patator
 
             # Post-explotación / AD
             metasploit netexec impacket evil-winrm enum4linux-ng smbmap
