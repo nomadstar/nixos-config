@@ -145,15 +145,23 @@
             # Web
             gobuster ffuf feroxbuster nikto nuclei sqlmap commix
 
-            # Credenciales
+            # Credenciales (patator reemplazado por alternativas nativas)
             hydra hashcat hashcat-utils john cewl crunch
+            medusa ncrack crowbar brutespray
 
             # Post-explotación / AD
-            metasploit netexec impacket evil-winrm enum4linux-ng smbmap
+            metasploit netexec evil-winrm enum4linux-ng smbmap
 
             # Utilidades
             seclists jq ripgrep git curl python3 pipx
           ];
+          shellHook = ''
+            export PATH="$HOME/.local/bin:$PATH"
+            # Fallback: si nixpkgs no trae patator o impacket, pipx los instala
+            command -v patator  >/dev/null 2>&1 || pipx install patator  >/dev/null 2>&1 || true
+            command -v secretsdump.py >/dev/null 2>&1 || pipx install impacket >/dev/null 2>&1 || true
+            echo "pentest-devshell listo: patator=$(command -v patator) secretsdump=$(command -v secretsdump.py)"
+          '';
         };
 
         sdr = pkgs.mkShell {
@@ -161,22 +169,22 @@
           packages = with pkgs; [
             # Drivers / hardware
             rtl-sdr hackrf airspy airspyhf soapysdr uhd
-          
+
             # GUI
             gqrx cubicsdr sdrpp
-          
+
             # Análisis / pentesting RF
             urh inspectrum multimon-ng rtl_433 redsea dump1090
-          
+
             # GNU Radio / DSP
-            gnuradio gr-osmosdr python3Full
-          
+            gnuradio gr-osmosdr python3
+
             # Modos digitales
             fldigi direwolf wsjtx
-          
+
             # GPS / satélites
             gps-sdr-sim gpsd gnss-sdr gpredict
-          
+
             # Audio / utilidades
             sox ffmpeg audacity pavucontrol
           ];
