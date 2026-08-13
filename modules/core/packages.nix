@@ -110,9 +110,30 @@
     obs-studio
 
     # Wireless display casting to Smart TVs (Miracast/WFD). Replaced
-    # fluxcast - works, but currently drops the connection after a few
-    # seconds (still needs debugging).
-    gnome-network-displays
+    # fluxcast - drops the connection after exactly 30s every time.
+    # Confirmed via tcpdump against the Roku Express 4K: SETUP/PLAY
+    # advertise `Session: ...;timeout=30`, the RTSP keep-alive
+    # (GET_PARAMETER) goes out at t+25s right on schedule, and the Roku
+    # never replies - no RTSP text at all after that request in the
+    # capture - so the session dies at exactly t+30s.
+    # Matches https://github.com/benzea/gnome-network-displays/issues/20
+    # (and #95): the keep-alive in wfd_client_timeout_session_filter_func
+    # (src/wfd/wfd-client.c) targets the per-stream URL
+    # rtsp://localhost/wfd1.0/streamid=0 instead of the spec-correct
+    # aggregate control URL rtsp://localhost/wfd1.0 (which is what the
+    # *other* GET_PARAMETER/SET_PARAMETER calls in the same file already
+    # use). The maintainer floated this exact one-line change in #20 as
+    # "more correct per spec" but the original reporter's device still
+    # hung with it, so it was never merged upstream. Confirmed fixed on
+    # this Roku 2026-08-12: casting no longer drops at 30s.
+    (gnome-network-displays.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace src/wfd/wfd-client.c \
+          --replace-fail \
+            'gst_rtsp_message_init_request (&msg, GST_RTSP_GET_PARAMETER, "rtsp://localhost/wfd1.0/streamid=0");' \
+            'gst_rtsp_message_init_request (&msg, GST_RTSP_GET_PARAMETER, "rtsp://localhost/wfd1.0");'
+      '';
+    }))
   ];
 
   environment.sessionVariables.GST_PLUGIN_SYSTEM_PATH_1_0 = lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (with pkgs.gst_all_1; [
