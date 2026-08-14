@@ -81,6 +81,29 @@ window#waybar {
     color: #006611;
 }
 
+/* "Are you stuck in a mode" warning light for hyprland.conf's resize submap.
+   Waybar sets #submap's CSS class to the active submap's *name* (confirmed
+   via --log-level debug: "label#submap.resize.module") and back to none for
+   the default keymap - so the base rule stays collapsed, and `.resize`
+   below is the only state that actually renders anything. */
+#submap {
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    min-width: 0;
+}
+
+#submap.resize {
+    padding: 0 10px;
+    margin: 4px 2px;
+    border-radius: 4px;
+    color: #001a00;
+    background-color: #00ff41;
+    border: 1px solid rgba(0, 255, 65, 0.6);
+    font-weight: bold;
+}
+
 #keyboard-state label {
     padding: 0 4px;
     color: #006611;

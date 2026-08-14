@@ -13,7 +13,7 @@
 
     "modules-left": ["hyprland/workspaces", "hyprland/window"],
     "modules-center": ["clock"],
-    "modules-right": ["custom/devshell", "pulseaudio", "network", "backlight", "keyboard-state", "cpu", "memory", "disk#root", "disk#home", "battery", "tray"],
+    "modules-right": ["custom/devshell", "pulseaudio", "network", "backlight", "hyprland/submap", "keyboard-state", "cpu", "memory", "disk#root", "disk#home", "battery", "tray"],
 
     "hyprland/workspaces": {
         "active-only": false,
@@ -83,6 +83,18 @@
         "format-icons": ["󰃞", "󰃟", "󰃠"],
         "on-scroll-up": "brightnessctl set 5%+",
         "on-scroll-down": "brightnessctl set 5%-"
+    },
+
+    // Hyprland's active submap (empty string = default keymap). This is a
+    // "you're stuck in a mode" warning light for hyprland.conf's resize
+    // submap (SUPER+R): while active, hjkl/arrows are captured for resizing
+    // and don't reach whatever app is focused, with no other on-screen sign
+    // that's happening - Escape/Enter exits back to normal keys. See
+    // style.css's #submap rule for the empty-vs-active styling.
+    "hyprland/submap": {
+        "format": "{}",
+        "max-length": 12,
+        "tooltip": false
     },
 
     "keyboard-state": {
