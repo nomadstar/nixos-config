@@ -277,12 +277,21 @@
               runScript = "bash";
             };
           in
+          # buildFHSEnv's `.env` output looks like the natural nix-develop-
+          # compatible shell, but it only merges the FHS packages' PATH/env
+          # vars into a plain shell - it skips the actual bwrap sandbox
+          # (confirmed live: nvcc/jupyter missing, LD_LIBRARY_PATH empty
+          # under `.env`), so pip-installed CUDA wheels would hit the exact
+          # "no FHS layout" problem buildFHSEnv exists to solve in the first
+          # place. `${fhs}/bin/rapids-fhs` (the real bwrap-sandboxed
+          # wrapper) is what's actually needed, so hand off to it here.
+          # Known tradeoff: `exec` replaces this process before nix's own
+          # `-c CMD` handoff would run, so `nix develop .#rapids -c CMD`
+          # silently does nothing - plain interactive `nix develop
+          # .#rapids` (the real workflow: `pip install`/`jupyter lab` typed
+          # by hand) works fine and gets the real sandbox.
           pkgs.mkShell {
             name = "rapids-devshell";
-            # Hands off to the FHS wrapper's own bash immediately - this
-            # outer mkShell only exists so `nix develop .#rapids` works the
-            # same way as every other devShell here instead of needing
-            # `nix run .#rapids-fhs-internals` or similar.
             shellHook = ''
               exec ${fhs}/bin/rapids-fhs
             '';
