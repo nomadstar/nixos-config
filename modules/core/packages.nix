@@ -141,6 +141,26 @@
           --replace-fail \
             'gst_rtsp_message_init_request (&msg, GST_RTSP_GET_PARAMETER, "rtsp://localhost/wfd1.0/streamid=0");' \
             'gst_rtsp_message_init_request (&msg, GST_RTSP_GET_PARAMETER, "rtsp://localhost/wfd1.0");'
+
+        # NdCCProvider's Avahi service browser fires service_added_cb once
+        # per protocol for dual-stack (IPv4+IPv6) mDNS announcements - every
+        # Chromecast/Android TV on this network announces both. The
+        # callback ignores which protocol it was actually called for and
+        # unconditionally creates a new GA_PROTOCOL_INET resolver, so a
+        # dual-stack sink gets two simultaneous duplicate IPv4-resolve
+        # requests. Avahi's mDNS duplicate-query suppression (RFC 6762) only
+        # answers one; the other's resolver just sits there until GND's own
+        # timeout fires "Failed to resolve Avahi service: Resolving failed:
+        # Timeout reached" - confirmed via source read 2026-08-14, and via
+        # `avahi-browse -r` resolving 100% cleanly at the same moment GND
+        # logged failures (ruling out avahi-daemon/network/opensnitch).
+        # Fix: only act on the IPv4 browse event, since we only ever
+        # request an IPv4 resolver anyway - the IPv6 event's info is
+        # redundant for this callback's purposes.
+        substituteInPlace src/nd-cc-provider.c \
+          --replace-fail \
+            'resolver = ga_service_resolver_new (iface,' \
+            $'if (proto != GA_PROTOCOL_INET)\n    return;\n\n  resolver = ga_service_resolver_new (iface,'
       '';
     }))
   ];
