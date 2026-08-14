@@ -3,8 +3,8 @@
 # Wi-Fi settings dropdown for waybar (wofi-based), reached by
 # right-clicking the waybar "network" module - left-click on that same
 # module opens nm-connection-editor instead (see home/waybar/config.jsonc
-# and home/hypr/hyprland.conf's nm-applet exec-once, both in the `dotfiles`
-# submodule/flake input). Two entries: Wi-Fi scan MAC randomization, and a
+# and home/hypr/hyprland.conf's nm-applet exec-once). Two entries: Wi-Fi
+# scan MAC randomization, and a
 # shortcut to open/raise OpenSnitch (modules/desktop/opensnitch.nix).
 #
 # Why this needs to be toggleable at all: NixOS's networkmanager module

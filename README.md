@@ -2,9 +2,14 @@
 
 This is the source code of my computing environment: a reproducible, modular
 NixOS configuration built on flakes. It's not a dotfiles dump — the goal is
-that this repository, plus its [`home`](https://github.com/nomadstar/dotfiles)
-and [`nvim`](https://github.com/nomadstar/starter) submodules, is enough to
-rebuild the machine it describes from a NixOS Live ISO.
+that this repository, plus its [`nvim`](https://github.com/nomadstar/starter)
+submodule, is enough to rebuild the machine it describes from a NixOS Live
+ISO. Hyprland/Alacritty/waybar/wofi dotfiles used to live in a separate
+[`nomadstar/dotfiles`](https://github.com/nomadstar/dotfiles) repo (git
+submodule + pinned flake input); they've since been folded directly into
+`home/` here, cutting the edit -> push -> re-pin -> rebuild round trip down
+to just edit -> rebuild. Full history of the old repo is still on GitHub if
+ever needed.
 
 Base: NixOS 25.11 (stable). Desktop: [Hyprland](https://hyprland.org/) on
 Wayland, with an i3-inspired keybinding layout and a green-on-black "Matrix"
@@ -17,9 +22,9 @@ nixos-config/
 ├── flake.nix / flake.lock   Entry point. Inputs: nixpkgs (25.11, stable - the
 │                             base system), nixpkgs-unstable (rolling, opt-in
 │                             per package - see Package freshness below),
-│                             home-manager, sops-nix, dotfiles + nvimConfig
-│                             (this machine's personal configs, see home/ and
-│                             nvim/ below), and three CLI/IDE-only flakes not
+│                             home-manager, sops-nix, nvimConfig (personal
+│                             Neovim config, see nvim/ below), and three
+│                             CLI/IDE-only flakes not
 │                             in nixpkgs: claude-code, antigravity-nix (agy
 │                             CLI + IDE), fluxcast (packaged from source
 │                             in-repo, see modules/core/fluxcast.nix).
@@ -57,28 +62,30 @@ nixos-config/
 │       ├── matrix-cursors.nix Green cursor theme, built by recoloring
 │       │                      capitaine-cursors' SVGs before the normal build
 │       ├── monitors.nix      host-specific NixOS-level monitor hook (currently a
-│       │                      no-op; actual monitor layout lives in the dotfiles
-│       │                      repo's hypr/monitors.conf, applied via Home Manager)
+│       │                      no-op; actual monitor layout lives in
+│       │                      home/hypr/monitors.conf, applied via Home Manager)
 │       ├── hypremoji.nix     HyprEmoji package wiring (see hypremoji/)
 │       └── hypremoji/        Source-built package (not in nixpkgs): package.nix
 │                              + a vendored Cargo.lock (upstream doesn't ship one)
 ├── secrets/
 │   └── secrets.yaml          sops-encrypted. Safe to be public - see Secrets below.
 ├── .sops.yaml                 sops creation rules (public age keys only)
-├── home/                      git submodule -> the dotfiles repo (Hyprland,
-│                              Alacritty, waybar, wofi, hyprpaper, nwg-displays
-│                              configs + the generated Matrix wallpaper),
-│                              applied via Home Manager.
+├── home/                      Hyprland, Alacritty, waybar, wofi, hyprpaper,
+│                              nwg-displays configs + the generated Matrix
+│                              wallpaper, applied via Home Manager. A plain
+│                              directory tracked directly in this repo
+│                              (formerly a separate `nomadstar/dotfiles`
+│                              repo/submodule - folded in, see below).
 ├── nvim/                      git submodule -> a personal NvChad-based Neovim
 │                              config, symlinked whole to ~/.config/nvim via
 │                              the `nvimConfig` flake input.
 └── assets/                    grub/, regreet/, wallpapers/ - originally
                                 planned as theming asset directories; the
                                 Matrix theme ended up living in modules/core/
-                                boot.nix (GRUB colors, raw config) and the
-                                home/ submodule (wallpaper, regreet reads GTK
-                                dconf settings instead) rather than here, so
-                                these are currently just placeholder READMEs.
+                                boot.nix (GRUB colors, raw config) and home/
+                                (wallpaper, regreet reads GTK dconf settings
+                                instead) rather than here, so these are
+                                currently just placeholder READMEs.
 ```
 
 Common configuration lives in `modules/`; anything host-specific (disk UUIDs,
@@ -86,22 +93,27 @@ hostname, monitor layout) lives under `hosts/<name>/`. Adding a second machine
 means adding `hosts/<name>/` and a matching `nixosConfigurations.<name>` in
 `flake.nix` - it reuses every shared module as-is, as `laptop` now does.
 
-### Two-repo (three, counting `nvim/`) editing workflow
+### `nvim/` editing workflow (submodule + pinned flake input)
 
-`home/` and `nvim/` are **separate git repositories**, checked out as
-submodules for convenience but pulled reproducibly as their own flake inputs
-(`dotfiles`, `nvimConfig`) pinned to a specific commit in `flake.lock`. This
-means editing `home/hypr/hyprland.conf` (or waybar, alacritty, wofi, ...)
-locally has **no effect** on a rebuild until you:
+`nvim/` is a **separate git repository**, checked out as a submodule for
+convenience but pulled reproducibly as its own flake input (`nvimConfig`)
+pinned to a specific commit in `flake.lock`. This means editing files inside
+`nvim/` locally has **no effect** on a rebuild until you:
 
-1. Commit and push inside `home/` (or `nvim/`) first.
-2. From the repo root, run `nix flake lock --update-input dotfiles` (or
-   `nvimConfig`) to bump the pin to the commit you just pushed.
+1. Commit and push inside `nvim/` first.
+2. From the repo root, run `nix flake lock --update-input nvimConfig` to
+   bump the pin to the commit you just pushed.
 3. Commit the resulting `flake.lock` change here, in `nixos-config`.
 4. `sudo nixos-rebuild switch --flake .#<host>`.
 
 Skipping step 1-2 and rebuilding will silently keep using whatever commit was
 last pinned - this has bitten this exact workflow before.
+
+`home/` (Hyprland, Alacritty, waybar, wofi, ...) used to need this same
+dance when it was a separate `dotfiles` repo/flake input. It's now a plain
+directory tracked directly in this repo, so editing e.g.
+`home/hypr/hyprland.conf` and running `sudo nixos-rebuild switch` is enough
+- no separate push or `flake.lock` update needed.
 
 ## Supported hosts
 
@@ -113,9 +125,10 @@ last pinned - this has bitten this exact workflow before.
 ## Keeping both hosts in sync
 
 There's no separate "sync" step to run - `desktop` and `laptop` already
-share every file under `modules/` (and the `home/`/`nvim/` submodules) as-is.
-A change made and pushed while sitting at one machine becomes available to
-the other the moment it pulls this repo. What's genuinely per-host and
+share every file under `modules/` and `home/` (and the `nvim/` submodule)
+as-is. A change made and pushed while sitting at one machine becomes
+available to the other the moment it pulls this repo. What's genuinely
+per-host and
 *never* carries over: `hosts/<name>/hardware-configuration.nix`, disk
 layout, and which GPU-specific devShell variant applies (`ai` vs
 `ai-laptop`) - everything else in `modules/core`/`modules/desktop` is
@@ -127,18 +140,18 @@ To bring changes made on one machine over to the other:
 # on the machine you DIDN'T edit on:
 cd nixos-config
 git pull
-git submodule update --init --recursive   # only needed if you'll edit home/ or nvim/
+git submodule update --init --recursive   # only needed if you'll edit nvim/
                                            # locally too - the build itself resolves
-                                           # them from flake.lock, not the checkout
+                                           # it from flake.lock, not the checkout
 sudo nixos-rebuild build --flake .#<this-host>   # verify first
 sudo nixos-rebuild switch --flake .#<this-host>
 ```
 
-If what changed lives in `home/` or `nvim/` (not just `nixos-config` itself),
-a plain `git pull` here is enough - those commits are already referenced by
+If what changed lives in `nvim/` (not just `nixos-config`/`home/` itself), a
+plain `git pull` here is enough - those commits are already referenced by
 `flake.lock`, which travels with the normal `git pull`. You only need the
-two/three-repo push-then-repin dance from the section above when you're the
-one making the `home/`/`nvim/` edit in the first place.
+push-then-repin dance from the section above when you're the one making the
+`nvim/` edit in the first place.
 
 ## Rebuilding this machine
 
@@ -364,7 +377,7 @@ the migration, per a preserve-behavior-first policy:
 - [x] Flake conversion of the working configuration (`modules/core`,
       `modules/desktop`, `hosts/desktop`)
 - [x] Home Manager managing Hyprland/Alacritty/nwg-displays/waybar/wofi from
-      the `home/` submodule, and a personal Neovim config from `nvim/`
+      `home/`, and a personal Neovim config from `nvim/`
 - [x] sops-nix encrypted secrets pipeline (scaffolded, one demo value)
 - [x] `ai` / `developer` / `pentest` / `sdr` devShells
 - [x] `monitors.conf` now sourced from `hyprland.conf` (nwg-displays layout
@@ -400,6 +413,10 @@ the migration, per a preserve-behavior-first policy:
 - [x] Remote desktop (`wayvnc` + `tigervnc`), office suite (`wpsoffice`),
       chat (`discord` + `vesktop`), screen recording (`obs-studio`),
       wireless display casting (`fluxcast`, packaged from source)
+- [x] Unified `home/` from a separate `dotfiles` repo (git submodule +
+      pinned flake input) into a plain directory tracked directly in this
+      repo - removes the edit -> push -> re-pin -> rebuild round trip that
+      previously made local Hyprland/waybar/etc. edits silently not apply
 - [ ] Fix remaining known gaps above (dead workspaces.conf)
 - [ ] Full i3-style `H/J/K/L` focus and window-movement keybindings (arrow
       keys work today)

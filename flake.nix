@@ -15,18 +15,10 @@
     home-manager.url = "github:nix-community/home-manager/release-25.11";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    # Curated dotfiles (hypr/alacritty/nwg-displays), also linked in as the
-    # home/ git submodule for `git clone --recurse-submodules`. Fetched here
-    # as its own flake input so Nix evaluation doesn't depend on the parent
-    # repo's git index carrying submodule content (it doesn't).
-    dotfiles = {
-      url = "github:nomadstar/dotfiles";
-      flake = false;
-    };
-
     # Personal Neovim (NvChad-based) config, also linked in as the nvim/ git
-    # submodule for `git clone --recurse-submodules` - same reasoning as
-    # `dotfiles` above.
+    # submodule for `git clone --recurse-submodules`. Fetched here as its
+    # own flake input so Nix evaluation doesn't depend on the parent repo's
+    # git index carrying submodule content (it doesn't).
     nvimConfig = {
       url = "github:nomadstar/starter";
       flake = false;
@@ -43,7 +35,7 @@
     antigravity-nix.url = "github:jacopone/antigravity-nix";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, dotfiles, nvimConfig, sops-nix, claude-code, antigravity-nix, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nvimConfig, sops-nix, claude-code, antigravity-nix, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -93,7 +85,7 @@
     {
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit dotfiles pkgsUnstable; };
+        specialArgs = { inherit pkgsUnstable; };
         modules = [
           ./hosts/desktop/default.nix
           sops-nix.nixosModules.sops
@@ -101,7 +93,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit dotfiles nvimConfig; };
+            home-manager.extraSpecialArgs = { inherit nvimConfig; };
             home-manager.users.nanixtus = import ./hosts/desktop/home.nix;
           }
         ];
@@ -109,7 +101,7 @@
 
       nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit dotfiles pkgsUnstable; };
+        specialArgs = { inherit pkgsUnstable; };
         modules = [
           ./hosts/laptop/default.nix
           sops-nix.nixosModules.sops
@@ -117,7 +109,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit dotfiles nvimConfig; };
+            home-manager.extraSpecialArgs = { inherit nvimConfig; };
             home-manager.users.nanixtus = import ./hosts/laptop/home.nix;
           }
         ];

@@ -1,0 +1,11 @@
+# editor cruft
+*.swp
+*~
+.DS_Store
+
+# never version secrets or credentials, just in case
+*secret*
+*password*
+*token*
+*.pem
+*.key

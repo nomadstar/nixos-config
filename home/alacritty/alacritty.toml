@@ -1,0 +1,34 @@
+
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"
+
+# Matrix-style green-on-black palette.
+[colors.primary]
+background = "#0d0208"
+foreground = "#00ff41"
+
+[colors.cursor]
+text = "#0d0208"
+cursor = "#00ff41"
+
+[colors.normal]
+black = "#0d0208"
+red = "#008f11"
+green = "#00ff41"
+yellow = "#00ff41"
+blue = "#008f11"
+magenta = "#00ff41"
+cyan = "#00ff41"
+white = "#00b32c"
+
+[colors.bright]
+black = "#003b00"
+red = "#00ff41"
+green = "#00ff41"
+yellow = "#00ff41"
+blue = "#00ff41"
+magenta = "#00ff41"
+cyan = "#00ff41"
+white = "#00ff41"

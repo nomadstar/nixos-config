@@ -1,0 +1,10 @@
+width=600
+height=400
+location=center
+show=drun
+prompt=
+allow_markup=true
+insensitive=true
+allow_images=true
+image_size=32
+gtk_dark=true

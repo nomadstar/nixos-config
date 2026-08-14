@@ -1,0 +1,92 @@
+* {
+    font-family: "JetBrainsMono Nerd Font", "Symbols Nerd Font", monospace;
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: rgba(5, 2, 2, 0.85);
+    color: #00ff41;
+    border: 1px solid rgba(0, 255, 65, 0.4);
+    border-radius: 6px;
+}
+
+#workspaces {
+    margin: 4px 4px;
+}
+
+#workspaces button {
+    padding: 0 8px;
+    color: #008f11;
+    background: transparent;
+}
+
+#workspaces button.active {
+    color: #00ff41;
+    text-shadow: 0 0 6px rgba(0, 255, 65, 0.8);
+}
+
+#workspaces button:hover {
+    background: rgba(0, 255, 65, 0.12);
+    border-radius: 4px;
+}
+
+#window {
+    padding: 0 10px;
+    margin: 4px 2px;
+    color: #00ff41;
+    font-weight: bold;
+}
+
+#clock,
+#pulseaudio,
+#network,
+#backlight,
+#keyboard-state,
+#cpu,
+#memory,
+#disk,
+#battery,
+#custom-wifi-mac,
+#custom-devshell,
+#tray {
+    padding: 0 10px;
+    margin: 4px 2px;
+    border-radius: 4px;
+    color: #00ff41;
+    background: rgba(0, 255, 65, 0.08);
+    border: 1px solid rgba(0, 255, 65, 0.2);
+}
+
+#battery.warning {
+    color: #ffb000;
+    border-color: rgba(255, 176, 0, 0.4);
+}
+
+#battery.critical {
+    color: #ff3131;
+    border-color: rgba(255, 49, 49, 0.4);
+}
+
+#battery.charging {
+    color: #00ff99;
+}
+
+#custom-wifi-mac.warning {
+    color: #ffb000;
+    border-color: rgba(255, 176, 0, 0.4);
+}
+
+#pulseaudio.muted {
+    color: #006611;
+}
+
+#keyboard-state label {
+    padding: 0 4px;
+    color: #006611;
+}
+
+#keyboard-state label.locked {
+    color: #00ff41;
+    text-shadow: 0 0 6px rgba(0, 255, 65, 0.8);
+}

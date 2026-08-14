@@ -1,4 +1,4 @@
-{ config, lib, pkgs, dotfiles, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   cfg = config.desktop.greeter;
@@ -69,7 +69,7 @@ in
       };
       widget.clock = { format = "%A, %d %B % %H:%M"; };
       background = {
-        path = "${dotfiles}/wallpapers/matrix.png";
+        path = "${../../home/wallpapers/matrix.png}";
         fit = "Cover";
       };
     };

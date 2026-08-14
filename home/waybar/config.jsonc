@@ -1,0 +1,137 @@
+// -*- mode: jsonc -*-
+// Hyprland-specific waybar config (the nixpkgs default is a Sway example
+// and pulls in "FontAwesome", which isn't installed - see modules/core/fonts.nix
+// for the Nerd Fonts this config actually uses instead).
+{
+    "layer": "top",
+    "position": "top",
+    "height": 32,
+    "spacing": 4,
+    "margin-top": 6,
+    "margin-left": 10,
+    "margin-right": 10,
+
+    "modules-left": ["hyprland/workspaces", "hyprland/window"],
+    "modules-center": ["clock"],
+    "modules-right": ["custom/devshell", "pulseaudio", "network", "backlight", "keyboard-state", "cpu", "memory", "disk#root", "disk#home", "battery", "tray"],
+
+    "hyprland/workspaces": {
+        "active-only": false,
+        "all-outputs": true,
+        "format": "{icon}",
+        "on-click": "activate",
+        "on-scroll-up": "hyprctl dispatch workspace e+1",
+        "on-scroll-down": "hyprctl dispatch workspace e-1",
+        "format-icons": {
+            "active": "",
+            "default": ""
+        }
+    },
+
+    "hyprland/window": {
+        "format": "{title}",
+        "max-length": 50,
+        "separate-outputs": true
+    },
+
+    "clock": {
+        "format": " {:%H:%M}",
+        "format-alt": " {:%A, %d %B %Y}",
+        "tooltip-format": "<tt><small>{calendar}</small></tt>"
+    },
+
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "󰖁",
+        "format-icons": {
+            "default": ["", "", "󰕾"]
+        },
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
+        "scroll-step": 5
+    },
+
+    // devShell picker (modules/desktop/devshell-picker.nix) - lists this
+    // flake's `nix develop .#<name>` shells (README.md's "Optional
+    // devShells") in a wofi menu and opens the chosen one in a terminal,
+    // so you don't have to remember the exact command/shell name.
+    "custom/devshell": {
+        "format": "❄",
+        "tooltip": "nix develop - click para elegir un devShell",
+        "on-click": "devshell-picker"
+    },
+
+    // No click handler: nm-applet already sits in the tray (this config's
+    // hyprland.conf exec-once) and its own icon there is directly
+    // clickable for the network menu, so a redundant on-click here isn't
+    // needed.
+    "network": {
+        "interval": 1,
+        "format-wifi": "{icon} {essid}  {bandwidthUpBytes}  {bandwidthDownBytes}",
+        "format-ethernet": "󰌘 {ifname}  {bandwidthUpBytes}  {bandwidthDownBytes}",
+        "format-disconnected": "󰌙 disconnected",
+        "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+        "tooltip-format": "{ipaddr}/{cidr}"
+    },
+
+    // No-op on hosts without a backlight device (desktop) - waybar hides
+    // the module, same as "battery" below.
+    "backlight": {
+        "device": "intel_backlight",
+        "format": "{icon} {percent}%",
+        "format-icons": ["󰃞", "󰃟", "󰃠"],
+        "on-scroll-up": "brightnessctl set 5%+",
+        "on-scroll-down": "brightnessctl set 5%-"
+    },
+
+    "keyboard-state": {
+        "numlock": true,
+        "capslock": true,
+        "format": "{name} {icon}",
+        "format-icons": {
+            "locked": "",
+            "unlocked": ""
+        }
+    },
+
+    "cpu": {
+        "format": "{usage}% 󰍛",
+        "interval": 5
+    },
+
+    "memory": {
+        "format": "{percentage}% 󰾆",
+        "interval": 10
+    },
+
+    "disk#root": {
+        "format": "󰋊 {percentage_used}%",
+        "path": "/",
+        "interval": 30,
+        "tooltip-format": "/ : {used} / {total} used"
+    },
+
+    "disk#home": {
+        "format": " {percentage_used}%  ",
+        "path": "/home",
+        "interval": 30,
+        "tooltip-format": "/home : {used} / {total} used"
+    },
+
+    // No-op on hosts without a battery (desktop) - waybar hides the module.
+    "battery": {
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon} {capacity}%",
+        "format-charging": " {capacity}%",
+        "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
+    },
+
+    "tray": {
+        "icon-size": 18,
+        "spacing": 8
+    }
+}

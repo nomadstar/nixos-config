@@ -37,22 +37,6 @@
         "type": "github"
       }
     },
-    "dotfiles": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1786633397,
-        "narHash": "sha256-rIh0M/WJdYhi0U7J46Qp5Nb3X2No/Br7cqXEW8f3CE4=",
-        "owner": "nomadstar",
-        "repo": "dotfiles",
-        "rev": "074412386e31acada9a44cf5c0360bcca5e8284a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nomadstar",
-        "repo": "dotfiles",
-        "type": "github"
-      }
-    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -176,7 +160,6 @@
       "inputs": {
         "antigravity-nix": "antigravity-nix",
         "claude-code": "claude-code",
-        "dotfiles": "dotfiles",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",

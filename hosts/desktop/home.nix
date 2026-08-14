@@ -1,24 +1,26 @@
-{ config, pkgs, lib, dotfiles, nvimConfig, ... }:
+{ config, pkgs, lib, nvimConfig, ... }:
 
 {
   home.username = "nanixtus";
   home.homeDirectory = "/home/nanixtus";
 
-  # Dotfiles come from the `dotfiles` flake input (a separate curated repo,
-  # also linked in as the home/ git submodule for human clones). Managed
-  # declaratively, but content is unchanged from the working system at
-  # migration time - see the dotfiles repo history for details.
-  xdg.configFile."hypr/hyprland.conf".source = "${dotfiles}/hypr/hyprland.conf";
-  xdg.configFile."hypr/workspaces.conf".source = "${dotfiles}/hypr/workspaces.conf";
-  xdg.configFile."hypr/hypremoji.conf".source = "${dotfiles}/hypr/hypremoji.conf";
-  xdg.configFile."hypr/hyprpaper.conf".source = "${dotfiles}/hypr/hyprpaper.conf";
-  xdg.configFile."alacritty/alacritty.toml".source = "${dotfiles}/alacritty/alacritty.toml";
-  xdg.configFile."nwg-displays/config".source = "${dotfiles}/nwg-displays/config";
-  xdg.configFile."waybar/config.jsonc".source = "${dotfiles}/waybar/config.jsonc";
-  xdg.configFile."waybar/style.css".source = "${dotfiles}/waybar/style.css";
-  xdg.configFile."wallpapers/matrix.png".source = "${dotfiles}/wallpapers/matrix.png";
-  xdg.configFile."wofi/config".source = "${dotfiles}/wofi/config";
-  xdg.configFile."wofi/style.css".source = "${dotfiles}/wofi/style.css";
+  # Dotfiles live directly in this repo under home/ (previously a separate
+  # `dotfiles` repo, fetched as its own flake input and linked in as a git
+  # submodule - unified into a single tree/checkout to cut the edit -> push
+  # -> `nix flake update dotfiles` -> rebuild round trip down to just edit ->
+  # rebuild). Full history of the old setup is still on GitHub at
+  # nomadstar/dotfiles if ever needed.
+  xdg.configFile."hypr/hyprland.conf".source = ../../home/hypr/hyprland.conf;
+  xdg.configFile."hypr/workspaces.conf".source = ../../home/hypr/workspaces.conf;
+  xdg.configFile."hypr/hypremoji.conf".source = ../../home/hypr/hypremoji.conf;
+  xdg.configFile."hypr/hyprpaper.conf".source = ../../home/hypr/hyprpaper.conf;
+  xdg.configFile."alacritty/alacritty.toml".source = ../../home/alacritty/alacritty.toml;
+  xdg.configFile."nwg-displays/config".source = ../../home/nwg-displays/config;
+  xdg.configFile."waybar/config.jsonc".source = ../../home/waybar/config.jsonc;
+  xdg.configFile."waybar/style.css".source = ../../home/waybar/style.css;
+  xdg.configFile."wallpapers/matrix.png".source = ../../home/wallpapers/matrix.png;
+  xdg.configFile."wofi/config".source = ../../home/wofi/config;
+  xdg.configFile."wofi/style.css".source = ../../home/wofi/style.css;
 
   # Personal Neovim (NvChad-based) config from the `nvimConfig` flake input -
   # whole-directory symlink, same reasoning as the dotfiles entries above.
@@ -90,7 +92,7 @@
   home.activation.seedMonitorsConf = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     target="$HOME/.config/hypr/monitors.conf"
     if [ ! -e "$target" ]; then
-      run install -Dm644 "${dotfiles}/hypr/monitors.conf" "$target"
+      run install -Dm644 "${../../home/hypr/monitors.conf}" "$target"
     fi
   '';
 
