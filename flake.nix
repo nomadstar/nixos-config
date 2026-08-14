@@ -211,6 +211,83 @@
           ];
         };
 
+        # RAPIDS (cuDF/cuML/...) has no real nixpkgs packaging - it ships as
+        # prebuilt manylinux pip wheels expecting a standard FHS distro
+        # layout (glibc paths, dlopen'd system libs) that NixOS doesn't
+        # have. buildFHSEnv gives pip a normal-looking Linux filesystem to
+        # install/run them in instead of patching every wheel by hand -
+        # same "throwaway, nothing touches the system" shape as every other
+        # devShell here. NVIDIA-only (laptop's RTX 2050, Ampere/GA107) -
+        # there's no ROCm equivalent to RAPIDS, so unlike `ai`/`ai-laptop`
+        # there's just one variant, and it does nothing useful run from the
+        # desktop (no NVIDIA GPU there, so no libcuda.so to find).
+        #
+        # First use, inside `nix develop .#rapids`:
+        #   python3 -m venv ~/.venvs/rapids && source ~/.venvs/rapids/bin/activate
+        #   pip install --extra-index-url=https://pypi.nvidia.com cudf-cu12 cuml-cu12 ipykernel
+        #   python -m ipykernel install --user --name rapids --display-name "RAPIDS (CUDA 12.8)"
+        #   jupyter lab   # then pick the "RAPIDS" kernel in the notebook
+        # cu12 matches this nixpkgs' cudaPackages.cudatoolkit (12.8) - if a
+        # future `nix flake update` bumps that to a cu13 release, the pip
+        # install line needs to follow. Every subsequent `nix develop
+        # .#rapids` auto-activates ~/.venvs/rapids if it's already there
+        # (see the FHS profile below) - the venv itself persists across
+        # shell entries, only the FHS wrapper around it is throwaway.
+        # jupyterlab comes from nixpkgs (fast, no multi-minute download)
+        # rather than the venv - it doesn't need CUDA itself, just to be
+        # able to spawn the registered "rapids" kernel as a subprocess.
+        rapids =
+          let
+            fhs = pkgs.buildFHSEnv {
+              name = "rapids-fhs";
+              targetPkgs = p: (with p; [
+                python3
+                python3Packages.pip
+                python3Packages.virtualenv
+                python3Packages.jupyterlab
+                git
+                which
+                curl
+                zlib
+                ncurses
+                stdenv.cc.cc.lib
+              ]) ++ (with pkgsUnfree; [
+                cudaPackages.cudatoolkit
+                cudaPackages.cuda_nvcc
+              ]);
+              profile = ''
+                # The actual GPU driver userspace lib (libcuda.so.1) comes
+                # from hardware.nvidia (modules/hardware/nvidia-prime.nix on
+                # the laptop) via hardware.graphics.enable's
+                # /run/opengl-driver symlink - buildFHSEnv doesn't virtualize
+                # /run, so it's already there, just needs to be on the
+                # dynamic linker's search path.
+                export LD_LIBRARY_PATH="/run/opengl-driver/lib:$LD_LIBRARY_PATH"
+                venv="$HOME/.venvs/rapids"
+                if [ -d "$venv" ]; then
+                  # shellcheck disable=SC1091
+                  source "$venv/bin/activate"
+                else
+                  echo "No RAPIDS venv yet at $venv - first-time setup:"
+                  echo "  python3 -m venv $venv && source $venv/bin/activate"
+                  echo "  pip install --extra-index-url=https://pypi.nvidia.com cudf-cu12 cuml-cu12 ipykernel"
+                  echo '  python -m ipykernel install --user --name rapids --display-name "RAPIDS (CUDA 12.8)"'
+                fi
+              '';
+              runScript = "bash";
+            };
+          in
+          pkgs.mkShell {
+            name = "rapids-devshell";
+            # Hands off to the FHS wrapper's own bash immediately - this
+            # outer mkShell only exists so `nix develop .#rapids` works the
+            # same way as every other devShell here instead of needing
+            # `nix run .#rapids-fhs-internals` or similar.
+            shellHook = ''
+              exec ${fhs}/bin/rapids-fhs
+            '';
+          };
+
         # GUI editors/IDEs plus the build/JS toolchain, kept out of the ai
         # devShell (and off the system entirely) since they're heavy/version-
         # sensitive per-project and only needed on demand. vscode is unfree,
