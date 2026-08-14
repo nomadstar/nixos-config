@@ -178,16 +178,16 @@
             gqrx cubicsdr sdrpp
 
             # Análisis / pentesting RF
-            urh inspectrum multimon-ng rtl_433 redsea dump1090
+            urh inspectrum multimon-ng rtl_433 dump1090-fa
 
             # GNU Radio / DSP
-            gnuradio gr-osmosdr python3
+            gnuradio gnuradioPackages.osmosdr python3
 
             # Modos digitales
             fldigi direwolf wsjtx
 
-            # GPS / satélites
-            gps-sdr-sim gpsd gnss-sdr gpredict
+            # GPS / satélites (gps-sdr-sim no está en nixpkgs, se cayó del shell)
+            gpsd gnss-sdr gpredict
 
             # Audio / utilidades
             sox ffmpeg audacity pavucontrol

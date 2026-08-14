@@ -1,4 +1,4 @@
-{ pkgs, lib, dotfiles, nvimConfig, ... }:
+{ config, pkgs, lib, dotfiles, nvimConfig, ... }:
 
 {
   home.username = "nanixtus";
@@ -78,4 +78,53 @@
   '';
 
   home.stateVersion = "25.11";
+
+  # Antigravity IDE ships fast builds and isn't in nixpkgs (see flake.nix's
+  # antigravity-nix input), so its pin goes stale between manual `nix flake
+  # update` runs. This checks daily, bumps just that input, and commits
+  # flake.lock if it changed - lock update only, no rebuild. Review and run
+  # `nixos-rebuild switch` yourself when you want the new version applied.
+  # Requires the linger tmpfiles rule in modules/core/users.nix so the timer
+  # fires even when nanixtus isn't logged in.
+  systemd.user.services.flake-lock-update-antigravity = {
+    Unit = {
+      Description = "Update antigravity-nix flake input and commit flake.lock";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = toString (pkgs.writeShellScript "update-antigravity-lock" ''
+        set -euo pipefail
+        repo="${config.home.homeDirectory}/nixos-config"
+        cd "$repo"
+
+        # Don't touch a repo with pending work - just skip this run.
+        if ! ${pkgs.git}/bin/git diff --quiet || ! ${pkgs.git}/bin/git diff --cached --quiet; then
+          echo "nixos-config has uncommitted changes, skipping flake.lock update"
+          exit 0
+        fi
+
+        ${pkgs.nix}/bin/nix flake lock --update-input antigravity-nix
+
+        if ! ${pkgs.git}/bin/git diff --quiet -- flake.lock; then
+          ${pkgs.git}/bin/git add flake.lock
+          ${pkgs.git}/bin/git commit -m "Update flake.lock (antigravity-nix)"
+          echo "flake.lock updated and committed - run nixos-rebuild switch to apply"
+        else
+          echo "antigravity-nix already up to date"
+        fi
+      '');
+    };
+  };
+
+  systemd.user.timers.flake-lock-update-antigravity = {
+    Unit.Description = "Daily check for antigravity-nix updates";
+    Timer = {
+      OnCalendar = "daily";
+      RandomizedDelaySec = "1h";
+      Persistent = true;
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
 }

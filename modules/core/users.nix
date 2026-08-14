@@ -13,4 +13,12 @@
     # without sudo. podman is rootless and needs no group membership.
     extraGroups = [ "networkmanager" "wheel" "input" "wireshark" "plugdev" "libvirtd" ];
   };
+
+  # Enables lingering for nanixtus: the user's systemd instance starts at
+  # boot and keeps running after logout, instead of only while logged in.
+  # Needed for the antigravity-nix flake.lock auto-update timer (see
+  # hosts/*/home.nix) to fire on schedule even when no session is active.
+  systemd.tmpfiles.rules = [
+    "f /var/lib/systemd/linger/nanixtus 0644 root root -"
+  ];
 }
