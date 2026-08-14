@@ -9,8 +9,12 @@
   # Unrelated to Miracast/WFD - that discovery happens over raw 802.11 P2P
   # frames before any IP network exists, confirmed via a monitor-mode
   # capture during the Wi-Fi P2P investigation (see hosts/laptop/default.nix).
-  services.avahi = {
+ services.avahi = {
     enable = true;
-    nssmdns4 = true;
+    nssmdns4 = true; # Allows software to resolve .local hostnames
+    publish = {
+      enable = true;
+      userServices = true;
+    };
   };
 }
