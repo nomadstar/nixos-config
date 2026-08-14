@@ -12,6 +12,7 @@
  services.avahi = {
     enable = true;
     nssmdns4 = true; # Allows software to resolve .local hostnames
+    openFirewall = true; # Allows other devices to find this system
     publish = {
       enable = true;
       userServices = true;
