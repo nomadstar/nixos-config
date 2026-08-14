@@ -55,6 +55,23 @@
     categories = [ "Office" ];
   };
 
+  # Firefox as the default browser for http(s)/html links, plus the
+  # pre-existing manual associations (claude-cli, discord) that lived in an
+  # unmanaged ~/.config/mimeapps.list before this - preserved here so this
+  # declaration doesn't drop them.
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "text/html" = "firefox.desktop";
+      "x-scheme-handler/http" = "firefox.desktop";
+      "x-scheme-handler/https" = "firefox.desktop";
+      "x-scheme-handler/about" = "firefox.desktop";
+      "x-scheme-handler/unknown" = "firefox.desktop";
+      "x-scheme-handler/claude-cli" = "claude-code-url-handler.desktop";
+      "x-scheme-handler/discord" = "vesktop.desktop";
+    };
+  };
+
   programs.bash.enable = true;
   programs.oh-my-posh = {
     enable = true;
