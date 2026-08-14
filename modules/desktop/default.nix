@@ -12,6 +12,7 @@
     ./opensnitch.nix
     ./devshell-picker.nix
     ./qt-theme.nix
+    ./venv-pkg-search.nix
   ];
 
   programs.firefox.enable = true;

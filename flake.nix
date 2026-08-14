@@ -124,41 +124,66 @@
         # laptop's GPU: NVIDIA GeForce RTX 2050 (Ampere, GA107) -> CUDA.
         ai-laptop = mkAiShell { gpu = "nvidia"; };
 
-        pentest = pkgs.mkShell {
-          name = "pentest-devshell";
-          packages = with pkgs; [
-            # Red
-            nmap masscan netcat-gnu socat tcpdump
-            bettercap responder mitmproxy proxychains zap wireshark
+        pentest =
+          let
+            # python3Packages.scapy/scrapy on their own wouldn't be
+            # importable - separate packages in `packages` just add their
+            # own store paths to PATH, they don't get merged into a bare
+            # `python3`'s sys.path. withPackages builds one interpreter
+            # with both baked into its site-packages instead.
+            pythonWithScapyScrapy = pkgs.python3.withPackages (ps: [ ps.scapy ps.scrapy ]);
+          in
+          pkgs.mkShell {
+            name = "pentest-devshell";
+            packages = with pkgs; [
+              # Red
+              nmap masscan netcat-gnu socat tcpdump
+              bettercap responder mitmproxy proxychains zap wireshark
 
-            # Recon / DNS / OSINT
-            dnsutils whois dnsrecon amass theharvester whatweb
+              # Recon / DNS / OSINT
+              dnsutils whois dnsrecon amass theharvester whatweb
 
-            # Web
-            gobuster ffuf feroxbuster nikto nuclei sqlmap commix
+              # Web
+              gobuster ffuf feroxbuster nikto nuclei sqlmap commix
 
-            # Credenciales (patator reemplazado por alternativas nativas)
-            hydra hashcat hashcat-utils john cewl crunch
-            medusa ncrack crowbar brutespray
+              # Credenciales (patator reemplazado por alternativas nativas)
+              hydra hashcat hashcat-utils john cewl crunch
+              medusa ncrack crowbar brutespray
 
-            # Post-explotación / AD
-            metasploit netexec evil-winrm enum4linux-ng smbmap
+              # Post-explotación / AD
+              metasploit netexec evil-winrm enum4linux-ng smbmap
 
-            # Utilidades
-            seclists jq ripgrep git curl python3 pipx
-          ];
-          shellHook = ''
-            export PATH="$HOME/.local/bin:$PATH"
-            # dumpcap del devshell no tiene CAP_NET_RAW/CAP_NET_ADMIN; anteponer
-            # /run/wrappers/bin para que Wireshark use el dumpcap con capabilities
-            # que instala programs.wireshark.enable (modules/core/security.nix).
-            export PATH="/run/wrappers/bin:$PATH"
-            # Fallback: si nixpkgs no trae patator o impacket, pipx los instala
-            command -v patator  >/dev/null 2>&1 || pipx install patator  >/dev/null 2>&1 || true
-            command -v secretsdump.py >/dev/null 2>&1 || pipx install impacket >/dev/null 2>&1 || true
-            echo "pentest-devshell listo: patator=$(command -v patator) secretsdump=$(command -v secretsdump.py)"
-          '';
-        };
+              # Utilidades
+              seclists jq ripgrep git curl pipx
+              pythonWithScapyScrapy
+            ];
+            shellHook = ''
+              # netexec (and possibly others here) exports its own PYTHONPATH
+              # - its whole python3.12 dependency closure - into this shell's
+              # environment. That leaks into any other python3 invocation,
+              # including pythonWithScapyScrapy's python3.13 (mismatched
+              # compiled-extension ABI, e.g. lxml failing to import etree).
+              # Each tool's own wrapper script sets its PYTHONPATH again right
+              # before running itself, so this is safe to drop.
+              unset PYTHONPATH
+              export PATH="$HOME/.local/bin:$PATH"
+              # dumpcap del devshell no tiene CAP_NET_RAW/CAP_NET_ADMIN; anteponer
+              # /run/wrappers/bin para que Wireshark use el dumpcap con capabilities
+              # que instala programs.wireshark.enable (modules/core/security.nix).
+              export PATH="/run/wrappers/bin:$PATH"
+              # bettercap/responder/mitmproxy/etc. all drag their own plain
+              # python3 into this shell's PATH as a runtime dependency, ahead
+              # of pythonWithScapyScrapy above (packages list order doesn't
+              # control PATH priority - closure order does), so a bare
+              # `python3` here would silently resolve to one *without* scapy
+              # or scrapy. Force it back to the front explicitly.
+              export PATH="${pythonWithScapyScrapy}/bin:$PATH"
+              # Fallback: si nixpkgs no trae patator o impacket, pipx los instala
+              command -v patator  >/dev/null 2>&1 || pipx install patator  >/dev/null 2>&1 || true
+              command -v secretsdump.py >/dev/null 2>&1 || pipx install impacket >/dev/null 2>&1 || true
+              echo "pentest-devshell listo: patator=$(command -v patator) secretsdump=$(command -v secretsdump.py)"
+            '';
+          };
 
         sdr = pkgs.mkShell {
           name = "sdr-devshell";
