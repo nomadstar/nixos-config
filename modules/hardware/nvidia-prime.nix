@@ -9,6 +9,16 @@
 
   hardware.graphics.enable = true;
 
+  # hardware.graphics.enable above makes the GPU driver's libcuda.so.1
+  # available under /run/opengl-driver, but that's only wired into
+  # GL/Vulkan loaders that already know to look there - a pip-installed
+  # RAPIDS/PyTorch-style CUDA wheel just dlopen()s libcuda.so.1 via a plain
+  # search path and won't find it without this. Paired with
+  # modules/core/nix-ld.nix (which lets the wheel's compiled extensions run
+  # at all on NixOS in the first place). Laptop-only: the desktop has no
+  # NVIDIA GPU, so this would just be dead weight there.
+  environment.variables.LD_LIBRARY_PATH = "/run/opengl-driver/lib";
+
   hardware.nvidia = {
     modesetting.enable = true;
     open = true; # supported (and recommended) for Turing+ GPUs like this one

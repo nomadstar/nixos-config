@@ -212,15 +212,23 @@
         };
 
         # RAPIDS (cuDF/cuML/...) has no real nixpkgs packaging - it ships as
-        # prebuilt manylinux pip wheels expecting a standard FHS distro
-        # layout (glibc paths, dlopen'd system libs) that NixOS doesn't
-        # have. buildFHSEnv gives pip a normal-looking Linux filesystem to
-        # install/run them in instead of patching every wheel by hand -
-        # same "throwaway, nothing touches the system" shape as every other
-        # devShell here. NVIDIA-only (laptop's RTX 2050, Ampere/GA107) -
-        # there's no ROCm equivalent to RAPIDS, so unlike `ai`/`ai-laptop`
-        # there's just one variant, and it does nothing useful run from the
-        # desktop (no NVIDIA GPU there, so no libcuda.so to find).
+        # prebuilt manylinux pip wheels. Their compiled extensions hardcode
+        # a standard-distro dynamic linker path that doesn't exist on
+        # NixOS - modules/core/nix-ld.nix fixes that system-wide, and
+        # modules/hardware/nvidia-prime.nix (laptop-only) exports
+        # LD_LIBRARY_PATH so they can also find the actual GPU driver's
+        # libcuda.so.1. With both in place a plain venv + pip install just
+        # works, no FHS/chroot layer needed here (an earlier buildFHSEnv
+        # version of this shell hit real problems: `.env` skips the actual
+        # sandbox, and the alternative - `exec`ing into the wrapper's own
+        # bash - breaks `nix develop -c CMD`; not needed once nix-ld covers
+        # the same problem at the system level instead).
+        #
+        # NVIDIA-only (laptop's RTX 2050, Ampere/GA107) - there's no ROCm
+        # equivalent to RAPIDS, so unlike `ai`/`ai-laptop` there's just one
+        # variant, and it does nothing useful run from the desktop (no
+        # NVIDIA GPU there, so no libcuda.so to find - nix-ld itself is
+        # host-agnostic, but that half alone isn't enough).
         #
         # First use, inside `nix develop .#rapids`:
         #   python3 -m venv ~/.venvs/rapids && source ~/.venvs/rapids/bin/activate
@@ -229,73 +237,51 @@
         #   jupyter lab   # then pick the "RAPIDS" kernel in the notebook
         # cu12 matches this nixpkgs' cudaPackages.cudatoolkit (12.8) - if a
         # future `nix flake update` bumps that to a cu13 release, the pip
-        # install line needs to follow. Every subsequent `nix develop
-        # .#rapids` auto-activates ~/.venvs/rapids if it's already there
-        # (see the FHS profile below) - the venv itself persists across
-        # shell entries, only the FHS wrapper around it is throwaway.
-        # jupyterlab comes from nixpkgs (fast, no multi-minute download)
-        # rather than the venv - it doesn't need CUDA itself, just to be
-        # able to spawn the registered "rapids" kernel as a subprocess.
-        rapids =
-          let
-            fhs = pkgs.buildFHSEnv {
-              name = "rapids-fhs";
-              targetPkgs = p: (with p; [
-                python3
-                python3Packages.pip
-                python3Packages.virtualenv
-                python3Packages.jupyterlab
-                git
-                which
-                curl
-                zlib
-                ncurses
-                stdenv.cc.cc.lib
-              ]) ++ (with pkgsUnfree; [
-                cudaPackages.cudatoolkit
-                cudaPackages.cuda_nvcc
-              ]);
-              profile = ''
-                # The actual GPU driver userspace lib (libcuda.so.1) comes
-                # from hardware.nvidia (modules/hardware/nvidia-prime.nix on
-                # the laptop) via hardware.graphics.enable's
-                # /run/opengl-driver symlink - buildFHSEnv doesn't virtualize
-                # /run, so it's already there, just needs to be on the
-                # dynamic linker's search path.
-                export LD_LIBRARY_PATH="/run/opengl-driver/lib:$LD_LIBRARY_PATH"
-                venv="$HOME/.venvs/rapids"
-                if [ -d "$venv" ]; then
-                  # shellcheck disable=SC1091
-                  source "$venv/bin/activate"
-                else
-                  echo "No RAPIDS venv yet at $venv - first-time setup:"
-                  echo "  python3 -m venv $venv && source $venv/bin/activate"
-                  echo "  pip install --extra-index-url=https://pypi.nvidia.com cudf-cu12 cuml-cu12 ipykernel"
-                  echo '  python -m ipykernel install --user --name rapids --display-name "RAPIDS (CUDA 12.8)"'
-                fi
-              '';
-              runScript = "bash";
-            };
-          in
-          # buildFHSEnv's `.env` output looks like the natural nix-develop-
-          # compatible shell, but it only merges the FHS packages' PATH/env
-          # vars into a plain shell - it skips the actual bwrap sandbox
-          # (confirmed live: nvcc/jupyter missing, LD_LIBRARY_PATH empty
-          # under `.env`), so pip-installed CUDA wheels would hit the exact
-          # "no FHS layout" problem buildFHSEnv exists to solve in the first
-          # place. `${fhs}/bin/rapids-fhs` (the real bwrap-sandboxed
-          # wrapper) is what's actually needed, so hand off to it here.
-          # Known tradeoff: `exec` replaces this process before nix's own
-          # `-c CMD` handoff would run, so `nix develop .#rapids -c CMD`
-          # silently does nothing - plain interactive `nix develop
-          # .#rapids` (the real workflow: `pip install`/`jupyter lab` typed
-          # by hand) works fine and gets the real sandbox.
-          pkgs.mkShell {
-            name = "rapids-devshell";
-            shellHook = ''
-              exec ${fhs}/bin/rapids-fhs
-            '';
-          };
+        # install line needs to follow. ~/.venvs/rapids persists across
+        # shell entries (auto-activated below if already there) - only the
+        # devShell itself is throwaway, same as everywhere else in this
+        # flake. jupyterlab comes from nixpkgs (fast, no multi-minute
+        # download) rather than the venv - it doesn't need CUDA itself,
+        # just to be able to spawn the registered "rapids" kernel.
+        rapids = pkgs.mkShell {
+          name = "rapids-devshell";
+          packages = with pkgs; [
+            python3
+            python3Packages.pip
+            python3Packages.virtualenv
+            python3Packages.jupyterlab
+          ] ++ (with pkgsUnfree; [
+            cudaPackages.cudatoolkit
+            cudaPackages.cuda_nvcc
+          ]);
+          shellHook = ''
+            # nix-ld (modules/core/nix-ld.nix) only covers a pip-installed
+            # wheel's *own* initial dynamic loading. RAPIDS' native libs
+            # then dlopen() several more .so's themselves from already-
+            # running Python (ctypes), which uses plain LD_LIBRARY_PATH
+            # instead - confirmed live: `import cudf` got past process
+            # startup fine, then failed with "libstdc++.so.6: cannot open
+            # shared object file" from inside libcufile's own dlopen call.
+            export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath [
+              pkgs.stdenv.cc.cc.lib
+              pkgs.zlib
+              pkgs.openssl
+              pkgs.curl
+              pkgs.ncurses
+              pkgs.icu
+            ]}:/run/opengl-driver/lib"
+            venv="$HOME/.venvs/rapids"
+            if [ -d "$venv" ]; then
+              # shellcheck disable=SC1091
+              source "$venv/bin/activate"
+            else
+              echo "No RAPIDS venv yet at $venv - first-time setup:"
+              echo "  python3 -m venv $venv && source $venv/bin/activate"
+              echo "  pip install --extra-index-url=https://pypi.nvidia.com cudf-cu12 cuml-cu12 ipykernel"
+              echo '  python -m ipykernel install --user --name rapids --display-name "RAPIDS (CUDA 12.8)"'
+            fi
+          '';
+        };
 
         # GUI editors/IDEs plus the build/JS toolchain, kept out of the ai
         # devShell (and off the system entirely) since they're heavy/version-

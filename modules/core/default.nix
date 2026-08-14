@@ -11,5 +11,6 @@
     ./secrets.nix
     ./security.nix
     ./virtualisation.nix
+    ./nix-ld.nix
   ];
 }
