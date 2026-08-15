@@ -117,7 +117,7 @@
 
       # Optional, on-demand tool sets: `nix develop .#<name>`. Nothing here
       # is installed into the system config - these are throwaway shells.
-      devShells.${system} = {
+      devShells.${system} = rec {
         # desktop's GPU: AMD Radeon RX 9060 XT (Navi 44), amdgpu driver -> ROCm.
         ai = mkAiShell { gpu = "amd"; };
 
@@ -287,8 +287,18 @@
         # devShell (and off the system entirely) since they're heavy/version-
         # sensitive per-project and only needed on demand. vscode is unfree,
         # hence pkgsUnfree instead of pkgs here. nodejs bundles npm.
+        #
+        # inputsFrom pulls rapids in too (packages + its shellHook, which
+        # mkShell concatenates from every inputsFrom entry) - both are dev
+        # tool sets, and `nix develop .#developer && ..#rapids` doesn't
+        # combine environments (the second only starts once you exit the
+        # first), so this is the one-shell way to get both VSCode/build
+        # tooling and RAPIDS/CUDA in the same session. rapids itself stays
+        # around unchanged for a lighter, faster shell when the editors
+        # aren't needed.
         developer = pkgs.mkShell {
           name = "developer-devshell";
+          inputsFrom = [ rapids ];
           packages = [
             pkgsUnfree.vscode
             antigravity-nix.packages.${system}.google-antigravity-ide

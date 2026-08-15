@@ -21,6 +21,7 @@
   xdg.configFile."wallpapers/matrix.png".source = ../../home/wallpapers/matrix.png;
   xdg.configFile."wofi/config".source = ../../home/wofi/config;
   xdg.configFile."wofi/style.css".source = ../../home/wofi/style.css;
+  xdg.configFile."mako/config".source = ../../home/mako/config;
 
   # Personal Neovim (NvChad-based) config from the `nvimConfig` flake input -
   # whole-directory symlink, same reasoning as the dotfiles entries above.
