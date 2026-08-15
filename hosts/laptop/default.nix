@@ -54,6 +54,14 @@
   # this RTSP port reachable; NixOS's firewall blocks it by default.
   networking.firewall.allowedTCPPorts = [ 7236 ];
 
+  # WFD's actual RTP audio/video stream rides UDP on whatever ephemeral
+  # port GStreamer's udpsink picks, not 7236 (that's RTSP control only).
+  # Kernel's default ephemeral range (net.ipv4.ip_local_port_range).
+  # Not yet confirmed to matter for the Samsung Q60CA failure - every
+  # capture so far has died during 802.11 P2P GO negotiation, before any
+  # IP traffic exists at all - but harmless to have open regardless.
+  networking.firewall.allowedUDPPortRanges = [{ from = 32768; to = 60999; }];
+
   # Miracast needs Wi-Fi scan MAC randomization off (see
   # modules/desktop/wifi-panel.nix for why: no in-tree kernel driver,
   # including mt76/mt7921, declares
