@@ -339,6 +339,7 @@
         # sensitive per-project and only needed on demand. vscode is unfree,
         # hence pkgsUnfree instead of pkgs here. nodejs bundles npm.
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         #
         # inputsFrom pulls rapids in too (packages + its shellHook, which
         # mkShell concatenates from every inputsFrom entry) - both are dev
@@ -357,12 +358,17 @@
           ] ++ (with pkgs; [ gcc cmake nodejs pnpm yarn ]);
         };
 =======
+=======
+>>>>>>> Stashed changes
 
         # desktop's GPU: AMD Radeon RX 9060 XT (gfx1200) -> HIP/ROCm toolchain.
         developer = mkDeveloperShell { gpu = "amd"; };
 
         # laptop's GPU: NVIDIA GeForce RTX 2050 (Ampere, GA107) -> CUDA toolchain.
         developer-laptop = mkDeveloperShell { gpu = "nvidia"; };
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       };
 
