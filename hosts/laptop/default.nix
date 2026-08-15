@@ -62,6 +62,21 @@
   # IP traffic exists at all - but harmless to have open regardless.
   networking.firewall.allowedUDPPortRanges = [{ from = 32768; to = 60999; }];
 
+  # mt7921e (MT7922 firmware) has a MediaTek-specific CLC ("Country/Local
+  # Compliance") mechanism that restricts channels/TX power based on the
+  # detected regulatory domain. Every P2P negotiation attempt so far logs
+  # "Country XX" (world/unset domain, not CL) for both this device and the
+  # peer's WFD IE - CLC under an unset domain is a known source of overly
+  # conservative behavior with off-channel P2P Action frames on this chip
+  # family. Testing this because casting to this exact Samsung TV worked
+  # previously on the same hardware under Arch/i3 (X11) - the WFD
+  # negotiation path (wpa_supplicant/NetworkManager) is compositor-agnostic,
+  # so the regression points at a kernel/driver-level default differing
+  # from Arch's, not anything X11-vs-Wayland.
+  boot.extraModprobeConfig = ''
+    options mt7921_common disable_clc=1
+  '';
+
   # Miracast needs Wi-Fi scan MAC randomization off (see
   # modules/desktop/wifi-panel.nix for why: no in-tree kernel driver,
   # including mt76/mt7921, declares
