@@ -33,9 +33,20 @@
     # Google Antigravity IDE + `agy` CLI, for the ai/developer devShells. Not
     # in nixpkgs; this flake pins its own nixpkgs with allowUnfree already set.
     antigravity-nix.url = "github:jacopone/antigravity-nix";
+
+    # codebase-memory-mcp: MCP code-intelligence server (see
+    # modules/core/codebase-memory-mcp.nix and the repo-root .mcp.json for
+    # the opt-in Claude Code wiring). Not in nixpkgs; pinned to a release
+    # tag rather than `main` so `nix flake update` doesn't silently pick up
+    # unreleased commits. Upstream's own flake.nix builds it from source
+    # (pure C11, vendored tree-sitter grammars) - followed to our own
+    # nixpkgs instead of their pinned nixpkgs-unstable so it shares one
+    # stdenv/store closure with everything else here.
+    codebase-memory-mcp.url = "github:DeusData/codebase-memory-mcp/v0.10.5";
+    codebase-memory-mcp.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nvimConfig, sops-nix, claude-code, antigravity-nix, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nvimConfig, sops-nix, claude-code, antigravity-nix, codebase-memory-mcp, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -82,61 +93,16 @@
           ]) ++ gpuPackages;
         };
 
-      # Same per-host GPU policy as mkAiShell, for the `developer` devShell's
-      # compile toolchain (HIP for AMD, CUDA for NVIDIA) instead of runtime
-      # AI tooling. Each host's hosts/<host>/hardware-gpu.nix
-      # (hardwareProfile.gpuVendor, see modules/hardware/hardware-profile.nix)
-      # is the declared source of truth for which variant applies to that
-      # host; devShells aren't evaluated per-host, so `gpu` here still has to
-      # be picked by hand per variant below, same as mkAiShell's ai/ai-laptop.
-      mkDeveloperShell = { gpu ? "none" }:
-        let
-          gpuPackages =
-            if gpu == "amd" then
-              (with pkgs.rocmPackages; [
-                # Minimal HIP compile+run toolchain for desktop's AMD Radeon
-                # RX 9060 XT (gfx1200) - `clr` is the HIP runtime/ROCclr
-                # (also installs the HIP headers and its own patched clang
-                # toolchain under $out/llvm) and `hipcc` is the compiler
-                # driver that invokes it. rocminfo/rocm-smi are already on
-                # PATH system-wide via modules/hardware/amdgpu.nix on this
-                # host - listed again here too since they're tiny and this
-                # shell should be usable to validate them on its own.
-                # Deliberately not pulling in rocBLAS/MIOpen/rccl/etc -
-                # those are per-framework libraries (PyTorch-ROCm et al.
-                # pull their own), not needed just to build and run a HIP
-                # kernel.
-                clr
-                hipcc
-                rocminfo
-                rocm-smi
-              ])
-            else if gpu == "nvidia" then
-              (with pkgsUnfree.cudaPackages; [ cudatoolkit cuda_nvcc ])
-            else
-              [ ];
-        in
-        pkgs.mkShell {
-          name = "developer-devshell";
-          packages = [
-            pkgsUnfree.vscode
-            antigravity-nix.packages.${system}.google-antigravity-ide
-          ] ++ (with pkgs; [ gcc cmake ninja pkg-config nodejs pnpm yarn ]) ++ gpuPackages;
-          shellHook = pkgs.lib.optionalString (gpu == "amd") ''
-            # Pin every hipcc invocation to this host's actual GPU arch
-            # instead of relying on hipcc's runtime `amdgpu-arch` autodetect
-            # - keeps builds reproducible (same output regardless of GPU
-            # state/permissions at compile time) and avoids accidentally
-            # compiling fat multi-arch binaries.
-            export HIP_PLATFORM=amd
-            export HIPCC_COMPILE_FLAGS_APPEND="--offload-arch=gfx1200"
-          '';
-        };
+      # Built package handed to modules/core/codebase-memory-mcp.nix via
+      # specialArgs below - modules don't have lexical access to this
+      # `let` block, only to whatever's threaded through explicitly, same
+      # as pkgsUnstable already is.
+      codebaseMemoryMcp = codebase-memory-mcp.packages.${system}.default;
     in
     {
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit pkgsUnstable; };
+        specialArgs = { inherit pkgsUnstable codebaseMemoryMcp; };
         modules = [
           ./hosts/desktop/default.nix
           sops-nix.nixosModules.sops
@@ -152,7 +118,7 @@
 
       nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit pkgsUnstable; };
+        specialArgs = { inherit pkgsUnstable codebaseMemoryMcp; };
         modules = [
           ./hosts/laptop/default.nix
           sops-nix.nixosModules.sops
@@ -338,8 +304,6 @@
         # devShell (and off the system entirely) since they're heavy/version-
         # sensitive per-project and only needed on demand. vscode is unfree,
         # hence pkgsUnfree instead of pkgs here. nodejs bundles npm.
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
         #
         # inputsFrom pulls rapids in too (packages + its shellHook, which
         # mkShell concatenates from every inputsFrom entry) - both are dev
@@ -349,27 +313,47 @@
         # tooling and RAPIDS/CUDA in the same session. rapids itself stays
         # around unchanged for a lighter, faster shell when the editors
         # aren't needed.
+        #
+        # Also carries desktop's AMD HIP/ROCm compile toolchain (clr,
+        # hipcc) alongside rapids' CUDA packages - the two vendors' tool-
+        # chains don't collide (distinct package names/paths), so one
+        # shell covers both compiling HIP kernels for the desktop's RX
+        # 9060 XT (gfx1200) and running RAPIDS against the laptop's NVIDIA
+        # dGPU, whichever host you're actually on.
         developer = pkgs.mkShell {
           name = "developer-devshell";
           inputsFrom = [ rapids ];
           packages = [
             pkgsUnfree.vscode
             antigravity-nix.packages.${system}.google-antigravity-ide
-          ] ++ (with pkgs; [ gcc cmake nodejs pnpm yarn ]);
+          ] ++ (with pkgs; [ gcc cmake ninja pkg-config nodejs pnpm yarn ]) ++ (with pkgs.rocmPackages; [
+            # Minimal HIP compile+run toolchain for desktop's AMD Radeon RX
+            # 9060 XT (gfx1200) - `clr` is the HIP runtime/ROCclr (also
+            # installs the HIP headers and its own patched clang toolchain
+            # under $out/llvm) and `hipcc` is the compiler driver that
+            # invokes it. rocminfo/rocm-smi are already on PATH system-wide
+            # via modules/hardware/amdgpu.nix on desktop - listed again
+            # here too since they're tiny and this shell should be usable
+            # to validate them on its own. Deliberately not pulling in
+            # rocBLAS/MIOpen/rccl/etc - those are per-framework libraries
+            # (PyTorch-ROCm et al. pull their own), not needed just to
+            # build and run a HIP kernel.
+            clr
+            hipcc
+            rocminfo
+            rocm-smi
+          ]);
+          shellHook = ''
+            # Pin every hipcc invocation to gfx1200 (desktop's RX 9060 XT)
+            # instead of relying on hipcc's runtime `amdgpu-arch` autodetect
+            # - keeps builds reproducible (same output regardless of GPU
+            # state/permissions at compile time) and avoids accidentally
+            # compiling fat multi-arch binaries. Harmless on the laptop -
+            # it just never invokes hipcc there.
+            export HIP_PLATFORM=amd
+            export HIPCC_COMPILE_FLAGS_APPEND="--offload-arch=gfx1200"
+          '';
         };
-=======
-=======
->>>>>>> Stashed changes
-
-        # desktop's GPU: AMD Radeon RX 9060 XT (gfx1200) -> HIP/ROCm toolchain.
-        developer = mkDeveloperShell { gpu = "amd"; };
-
-        # laptop's GPU: NVIDIA GeForce RTX 2050 (Ampere, GA107) -> CUDA toolchain.
-        developer-laptop = mkDeveloperShell { gpu = "nvidia"; };
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       };
 
       # `nix flake check` (full, not --no-build) builds and runs this -

@@ -37,6 +37,27 @@
         "type": "github"
       }
     },
+    "codebase-memory-mcp": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786783539,
+        "narHash": "sha256-RivqusJxKNDpRYQCch4zCsdtnVCVGrkc82X0JokYKF4=",
+        "owner": "DeusData",
+        "repo": "codebase-memory-mcp",
+        "rev": "77195634e13fd3bcd0d24543de5f876b4679f1cf",
+        "type": "github"
+      },
+      "original": {
+        "owner": "DeusData",
+        "ref": "v0.10.5",
+        "repo": "codebase-memory-mcp",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -160,6 +181,7 @@
       "inputs": {
         "antigravity-nix": "antigravity-nix",
         "claude-code": "claude-code",
+        "codebase-memory-mcp": "codebase-memory-mcp",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",

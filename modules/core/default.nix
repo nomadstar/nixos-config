@@ -14,5 +14,6 @@
     ./nix-ld.nix
     ../hardware/hardware-profile.nix
     ../hardware/detect-gpu.nix
+    ./codebase-memory-mcp.nix
   ];
 }
