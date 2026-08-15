@@ -81,6 +81,57 @@
             opencode
           ]) ++ gpuPackages;
         };
+
+      # Same per-host GPU policy as mkAiShell, for the `developer` devShell's
+      # compile toolchain (HIP for AMD, CUDA for NVIDIA) instead of runtime
+      # AI tooling. Each host's hosts/<host>/hardware-gpu.nix
+      # (hardwareProfile.gpuVendor, see modules/hardware/hardware-profile.nix)
+      # is the declared source of truth for which variant applies to that
+      # host; devShells aren't evaluated per-host, so `gpu` here still has to
+      # be picked by hand per variant below, same as mkAiShell's ai/ai-laptop.
+      mkDeveloperShell = { gpu ? "none" }:
+        let
+          gpuPackages =
+            if gpu == "amd" then
+              (with pkgs.rocmPackages; [
+                # Minimal HIP compile+run toolchain for desktop's AMD Radeon
+                # RX 9060 XT (gfx1200) - `clr` is the HIP runtime/ROCclr
+                # (also installs the HIP headers and its own patched clang
+                # toolchain under $out/llvm) and `hipcc` is the compiler
+                # driver that invokes it. rocminfo/rocm-smi are already on
+                # PATH system-wide via modules/hardware/amdgpu.nix on this
+                # host - listed again here too since they're tiny and this
+                # shell should be usable to validate them on its own.
+                # Deliberately not pulling in rocBLAS/MIOpen/rccl/etc -
+                # those are per-framework libraries (PyTorch-ROCm et al.
+                # pull their own), not needed just to build and run a HIP
+                # kernel.
+                clr
+                hipcc
+                rocminfo
+                rocm-smi
+              ])
+            else if gpu == "nvidia" then
+              (with pkgsUnfree.cudaPackages; [ cudatoolkit cuda_nvcc ])
+            else
+              [ ];
+        in
+        pkgs.mkShell {
+          name = "developer-devshell";
+          packages = [
+            pkgsUnfree.vscode
+            antigravity-nix.packages.${system}.google-antigravity-ide
+          ] ++ (with pkgs; [ gcc cmake ninja pkg-config nodejs pnpm yarn ]) ++ gpuPackages;
+          shellHook = pkgs.lib.optionalString (gpu == "amd") ''
+            # Pin every hipcc invocation to this host's actual GPU arch
+            # instead of relying on hipcc's runtime `amdgpu-arch` autodetect
+            # - keeps builds reproducible (same output regardless of GPU
+            # state/permissions at compile time) and avoids accidentally
+            # compiling fat multi-arch binaries.
+            export HIP_PLATFORM=amd
+            export HIPCC_COMPILE_FLAGS_APPEND="--offload-arch=gfx1200"
+          '';
+        };
     in
     {
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
@@ -287,6 +338,7 @@
         # devShell (and off the system entirely) since they're heavy/version-
         # sensitive per-project and only needed on demand. vscode is unfree,
         # hence pkgsUnfree instead of pkgs here. nodejs bundles npm.
+<<<<<<< Updated upstream
         #
         # inputsFrom pulls rapids in too (packages + its shellHook, which
         # mkShell concatenates from every inputsFrom entry) - both are dev
@@ -304,6 +356,27 @@
             antigravity-nix.packages.${system}.google-antigravity-ide
           ] ++ (with pkgs; [ gcc cmake nodejs pnpm yarn ]);
         };
+=======
+
+        # desktop's GPU: AMD Radeon RX 9060 XT (gfx1200) -> HIP/ROCm toolchain.
+        developer = mkDeveloperShell { gpu = "amd"; };
+
+        # laptop's GPU: NVIDIA GeForce RTX 2050 (Ampere, GA107) -> CUDA toolchain.
+        developer-laptop = mkDeveloperShell { gpu = "nvidia"; };
+>>>>>>> Stashed changes
       };
+
+      # `nix flake check` (full, not --no-build) builds and runs this -
+      # regression coverage for classify_gpus()'s topology rules (see
+      # modules/hardware/gpu-classify.sh) using simulated vendor lists, no
+      # test framework, no real hardware involved.
+      checks.${system}.gpu-classify = pkgs.runCommand "gpu-classify-tests" { } ''
+        ${pkgs.writeShellApplication {
+          name = "detect-gpu-selftest";
+          text = builtins.readFile ./modules/hardware/gpu-classify.sh
+            + "\n" + builtins.readFile ./modules/hardware/gpu-classify-test.sh;
+        }}/bin/detect-gpu-selftest
+        touch $out
+      '';
     };
 }

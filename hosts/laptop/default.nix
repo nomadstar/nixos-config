@@ -3,6 +3,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./hardware-gpu.nix
     ../../modules/core
     ../../modules/desktop
     ../../modules/hardware/nvidia-prime.nix

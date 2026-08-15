@@ -3,8 +3,10 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./hardware-gpu.nix
     ../../modules/core
     ../../modules/desktop
+    ../../modules/hardware/amdgpu.nix
     ../../modules/hardware/rtl-sdr.nix
   ];
 
