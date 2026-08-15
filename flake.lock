@@ -38,11 +38,7 @@
       }
     },
     "codebase-memory-mcp": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
+      "flake": false,
       "locked": {
         "lastModified": 1786783539,
         "narHash": "sha256-RivqusJxKNDpRYQCch4zCsdtnVCVGrkc82X0JokYKF4=",

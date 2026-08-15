@@ -34,16 +34,18 @@
     # in nixpkgs; this flake pins its own nixpkgs with allowUnfree already set.
     antigravity-nix.url = "github:jacopone/antigravity-nix";
 
-    # codebase-memory-mcp: MCP code-intelligence server (see
-    # modules/core/codebase-memory-mcp.nix and the repo-root .mcp.json for
-    # the opt-in Claude Code wiring). Not in nixpkgs; pinned to a release
-    # tag rather than `main` so `nix flake update` doesn't silently pick up
-    # unreleased commits. Upstream's own flake.nix builds it from source
-    # (pure C11, vendored tree-sitter grammars) - followed to our own
-    # nixpkgs instead of their pinned nixpkgs-unstable so it shares one
-    # stdenv/store closure with everything else here.
-    codebase-memory-mcp.url = "github:DeusData/codebase-memory-mcp/v0.10.5";
-    codebase-memory-mcp.inputs.nixpkgs.follows = "nixpkgs";
+    # codebase-memory-mcp: MCP code-intelligence server (see the
+    # codebaseMemoryMcp derivation below, modules/core/codebase-memory-mcp.nix,
+    # and the repo-root .mcp.json for the opt-in Claude Code wiring). Not in
+    # nixpkgs; pinned to a release tag rather than `main` so `nix flake
+    # update` doesn't silently pick up unreleased commits. `flake = false` -
+    # only the source tree is used (see codebaseMemoryMcp below), not
+    # upstream's own flake.nix/packages output (that only builds the no-UI
+    # variant).
+    codebase-memory-mcp = {
+      url = "github:DeusData/codebase-memory-mcp/v0.10.5";
+      flake = false;
+    };
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nvimConfig, sops-nix, claude-code, antigravity-nix, codebase-memory-mcp, ... }:
@@ -93,11 +95,72 @@
           ]) ++ gpuPackages;
         };
 
-      # Built package handed to modules/core/codebase-memory-mcp.nix via
-      # specialArgs below - modules don't have lexical access to this
-      # `let` block, only to whatever's threaded through explicitly, same
-      # as pkgsUnstable already is.
-      codebaseMemoryMcp = codebase-memory-mcp.packages.${system}.default;
+      # Built from source with its graph UI embedded (`make -f Makefile.cbm
+      # cbm-with-ui`) - upstream's own flake.nix only builds the no-UI
+      # variant (`cbm`), and the UI-enabled binary is a strict superset
+      # (identical CLI/MCP behavior; the UI just doesn't start unless
+      # `--ui=true` is passed), so there's no reason to build both.
+      #
+      # `cbm-with-ui`'s prerequisites - the `frontend` (`cd graph-ui && npm
+      # ci && npm run build`) and `embed` Makefile targets - are both
+      # unconditional .PHONY, so a plain `make cbm-with-ui` always reruns
+      # `npm ci` itself, which needs network access Nix's sandboxed build
+      # doesn't have. Worked around by doing that step ourselves first -
+      # `fetchNpmDeps`/`npmConfigHook` prefetch graph-ui's npm deps as a
+      # fixed-output derivation so `npm ci` can run fully offline - then
+      # telling Make those two targets are already satisfied (`-o frontend
+      # -o embed`) so it goes straight to the final C link using what's
+      # already on disk.
+      #
+      # Handed to modules/core/codebase-memory-mcp.nix via specialArgs
+      # below - modules don't have lexical access to this `let` block, only
+      # to whatever's threaded through explicitly, same as pkgsUnstable.
+      codebaseMemoryMcp = pkgs.stdenv.mkDerivation {
+        pname = "codebase-memory-mcp";
+        version = "0.10.5";
+        src = codebase-memory-mcp;
+
+        nativeBuildInputs = [ pkgs.gnumake pkgs.nodejs pkgs.npmHooks.npmConfigHook ];
+        buildInputs = [ pkgs.zlib ];
+
+        npmRoot = "graph-ui";
+        npmDeps = pkgs.fetchNpmDeps {
+          name = "codebase-memory-mcp-graph-ui-npm-deps";
+          src = "${codebase-memory-mcp}/graph-ui";
+          hash = "sha256-cDwGJi8M/t7eTHVKu6TzW7L9OUAQgB+0c+fiTgPn7cE=";
+        };
+
+        buildPhase = ''
+          runHook preBuild
+
+          ( cd graph-ui
+            npm ci
+            # npm's own .bin shims use `#!/usr/bin/env node`, which doesn't
+            # resolve on NixOS (/usr/bin/env doesn't exist) - same category
+            # of problem upstream's flake.nix already works around for the
+            # C compiler check in scripts/build.sh.
+            patchShebangs node_modules
+            npm run build
+          )
+
+          bash scripts/embed-frontend.sh graph-ui/dist build/c/embedded
+          make -j$NIX_BUILD_CORES -f Makefile.cbm -o frontend -o embed cbm-with-ui
+
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          install -Dm755 build/c/codebase-memory-mcp $out/bin/codebase-memory-mcp
+        '';
+
+        meta = {
+          description = "MCP server that builds and queries a semantic graph of your codebase, with the graph UI embedded";
+          homepage = "https://github.com/DeusData/codebase-memory-mcp";
+          license = pkgs.lib.licenses.mit;
+          mainProgram = "codebase-memory-mcp";
+          platforms = [ "x86_64-linux" ];
+        };
+      };
     in
     {
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
