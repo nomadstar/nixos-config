@@ -453,6 +453,139 @@
             python3Packages.pyyaml
           ];
         };
+
+        # Shared browser-automation endpoint for AI coding agents (Claude
+        # Code, Antigravity/agy, Codex) to drive a real Firefox via MCP tool
+        # calls, instead of each paying for its own browser-use API. A single
+        # `mcp-server-playwright --port` process serves MCP over HTTP at
+        # 127.0.0.1:8931/mcp; every tool just gets an MCP *client* entry
+        # pointing at that URL (see the `cvbrowser` script's own --help and
+        # the three config snippets below) - no per-tool browser/API cost.
+        #
+        # Both `playwright-mcp` (Microsoft's official MCP server) and its
+        # Firefox build come straight from nixpkgs (confirmed via
+        # `nix build`: every path copied from cache.nixos.org, nothing
+        # fetched live from Microsoft's own playwright.dev/Azure CDN the way
+        # a plain `npx @playwright/mcp` or `playwright install firefox`
+        # would) - this is what "quitar el acceso a Microsoft" turns into in
+        # practice: the browser binary is a Nix derivation, not a live
+        # download, and `mcp-server-playwright --help` has no
+        # telemetry/analytics flag to begin with (there's nothing to opt out
+        # of - confirmed by reading the full --help output, not assumed).
+        # PLAYWRIGHT_BROWSERS_PATH below points the server at that Nix-built
+        # Firefox instead of letting it try to fetch its own.
+        #
+        # Isolation is process-level, not a container (podman is available
+        # system-wide - modules/core/virtualisation.nix - but a plain nix-
+        # shell process was the explicit choice here): `cvbrowser start` runs
+        # detached with its PID recorded in $XDG_RUNTIME_DIR/cvbrowser/, and
+        # `cvbrowser kill` SIGKILLs that PID plus its children (the actual
+        # Firefox process tree) the instant anything looks wrong - the whole
+        # point of the exercise. `--isolated` keeps the browser profile
+        # in-memory only (nothing persisted to disk to clean up after a
+        # kill); headed by default so you can actually watch what an agent
+        # is doing (CVBROWSER_HEADLESS=1 for headless instead).
+        #
+        # Client wiring (run once per tool, after `cvbrowser start`):
+        #   Claude Code: claude mcp add --transport http --scope user \
+        #     playwright-browser http://127.0.0.1:8931/mcp
+        #   Codex (~/.codex/config.toml):
+        #     [mcp_servers.playwright]
+        #     url = "http://127.0.0.1:8931/mcp"
+        #   Antigravity/agy (~/.gemini/config/mcp_config.json or
+        #   <workspace>/.agents/mcp_config.json - note the key is
+        #   `serverUrl`, NOT `url`; Antigravity's docs say legacy `url`/
+        #   `httpUrl` fields are not supported):
+        #     { "mcpServers": { "playwright": {
+        #         "serverUrl": "http://127.0.0.1:8931/mcp" } } }
+        browserAgent =
+          let
+            cvbrowser = pkgs.writeShellApplication {
+              name = "cvbrowser";
+              runtimeInputs = [ pkgs.playwright-mcp pkgs.procps ];
+              text = ''
+                RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/tmp}/cvbrowser"
+                PIDFILE="$RUNTIME_DIR/mcp.pid"
+                LOGFILE="$RUNTIME_DIR/mcp.log"
+                HOST=127.0.0.1
+                PORT=8931
+
+                mkdir -p "$RUNTIME_DIR"
+                export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+
+                is_running() {
+                  [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
+                }
+
+                cmd="status"
+                if [ "$#" -gt 0 ]; then
+                  cmd="$1"
+                fi
+
+                case "$cmd" in
+                  start)
+                    if is_running; then
+                      echo "already running (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp"
+                      exit 0
+                    fi
+                    extra_args=""
+                    if [ "''${CVBROWSER_HEADLESS:-0}" = "1" ]; then
+                      extra_args="--headless"
+                    fi
+                    # shellcheck disable=SC2086
+                    nohup mcp-server-playwright --browser firefox --host "$HOST" --port "$PORT" --isolated $extra_args \
+                      > "$LOGFILE" 2>&1 &
+                    echo $! > "$PIDFILE"
+                    sleep 1
+                    if is_running; then
+                      echo "started (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp  (legacy SSE: http://$HOST:$PORT/sse)"
+                    else
+                      echo "failed to start - see $LOGFILE" >&2
+                      exit 1
+                    fi
+                    ;;
+                  stop)
+                    if is_running; then
+                      kill -TERM "$(cat "$PIDFILE")"
+                      echo "sent SIGTERM to $(cat "$PIDFILE")"
+                    else
+                      echo "not running"
+                    fi
+                    rm -f "$PIDFILE"
+                    ;;
+                  kill)
+                    if is_running; then
+                      pid="$(cat "$PIDFILE")"
+                      pkill -KILL -P "$pid" 2>/dev/null || true
+                      kill -KILL "$pid" 2>/dev/null || true
+                      echo "killed $pid and its children"
+                    else
+                      echo "not running"
+                    fi
+                    rm -f "$PIDFILE"
+                    ;;
+                  status)
+                    if is_running; then
+                      echo "running (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp"
+                    else
+                      echo "not running"
+                    fi
+                    ;;
+                  logs)
+                    tail -n 50 -f "$LOGFILE"
+                    ;;
+                  *)
+                    echo "usage: cvbrowser {start|stop|kill|status|logs}" >&2
+                    exit 1
+                    ;;
+                esac
+              '';
+            };
+          in
+          pkgs.mkShell {
+            name = "browser-agent-devshell";
+            packages = [ cvbrowser pkgs.playwright-mcp pkgs.curl ];
+          };
       };
 
       # `nix flake check` (full, not --no-build) builds and runs this -
