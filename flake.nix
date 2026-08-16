@@ -227,7 +227,12 @@
               gobuster ffuf feroxbuster nikto nuclei sqlmap commix
 
               # Credenciales (patator reemplazado por alternativas nativas)
-              hydra hashcat hashcat-utils john cewl crunch
+              # NB: the cracker is `thc-hydra`, NOT `hydra` - nixpkgs' plain
+              # `hydra` attribute is NixOS's own Nix-based continuous build
+              # system, a completely unrelated package. That name collision
+              # is why `hydra` silently "didn't work" here before: it did
+              # install, just not the tool anyone in this shell wants.
+              thc-hydra hashcat hashcat-utils john cewl crunch
               medusa ncrack crowbar brutespray
 
               # Post-explotación / AD
@@ -416,6 +421,37 @@
             export HIP_PLATFORM=amd
             export HIPCC_COMPILE_FLAGS_APPEND="--offload-arch=gfx1200"
           '';
+        };
+
+        # LaTeX editing/compiling, plus the Python (Jinja2/PyYAML) toolchain
+        # that data-driven LaTeX generators (e.g. CVmaker's scripts/build.py)
+        # need to render templates before compiling. texlive.combine here
+        # instead of a plain `texlive.combined.scheme-*` package: scheme-full
+        # is a multi-GB download, and scheme-medium alone turned out to be
+        # missing titlesec and enumitem (both in collection-latexextra, not
+        # pulled in by scheme-medium - confirmed by an actual failed compile:
+        # scheme-medium alone still 404'd on enumitem.sty) plus Spanish
+        # hyphenation patterns (collection-langspanish) - all used by
+        # CVmaker's templates (\usepackage{titlesec}, \usepackage{enumitem},
+        # \usepackage[spanish]{babel}). Combining scheme-medium with just
+        # those keeps the closure far smaller than scheme-full while still
+        # covering every package currently `\usepackage`'d anywhere in that
+        # repo (fontenc/inputenc/geometry/hyperref/babel are already in
+        # scheme-medium). Add more collections/packages here if a future
+        # template pulls in something outside this set.
+        latexedit = pkgs.mkShell {
+          name = "latexedit-devshell";
+          packages = with pkgs; [
+            (texlive.combine {
+              inherit (texlive) scheme-medium latexmk titlesec enumitem collection-langspanish;
+            })
+            texlivePackages.chktex
+            python3
+            python3Packages.pip
+            python3Packages.virtualenv
+            python3Packages.jinja2
+            python3Packages.pyyaml
+          ];
         };
       };
 

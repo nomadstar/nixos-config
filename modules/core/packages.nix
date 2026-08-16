@@ -72,6 +72,9 @@
     tcpdump
     iperf3
 
+    # Video/audio downloader
+    yt-dlp
+
     # Wayland wallpaper daemon for hyprland.conf's exec-once
     hyprpaper
 
