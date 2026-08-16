@@ -512,6 +512,16 @@
 
                 mkdir -p "$RUNTIME_DIR"
                 export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+                # nixpkgs' mcp-server-playwright wrapper does
+                # `export PLAYWRIGHT_MCP_BROWSER=''${PLAYWRIGHT_MCP_BROWSER-'chromium'}`
+                # unconditionally, and the underlying server reads that env
+                # var to pick the browser - it wins over `--browser firefox`
+                # below, not the other way around (confirmed empirically:
+                # with the env var merely unset, the wrapper still defaulted
+                # it to chromium and that's what actually launched). Setting
+                # it here is what actually selects Firefox; --browser is
+                # kept for clarity/redundancy in case that ever changes.
+                export PLAYWRIGHT_MCP_BROWSER=firefox
 
                 is_running() {
                   [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
