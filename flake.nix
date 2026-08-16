@@ -86,12 +86,18 @@
             claude-code.packages.${system}.default
             antigravity-nix.packages.${system}.google-antigravity-cli
           ] ++ (with pkgsUnstable; [
-            # These two ship new releases often enough that waiting for
+            # These ship new releases often enough that waiting for
             # them to land in nixos-25.11 means running months-old
             # versions - pulled from pkgsUnstable instead of pkgs on
             # purpose. Everything else in this shell stays on stable.
             ollama
             opencode
+            # OpenAI's Codex CLI - the third agent (alongside Claude Code
+            # and agy/Antigravity above) wired to the shared browserAgent
+            # MCP server's config (see that devShell's comment block);
+            # ~/.codex/config.toml already points it at
+            # http://127.0.0.1:8931/mcp.
+            codex
           ]) ++ gpuPackages;
         };
 
