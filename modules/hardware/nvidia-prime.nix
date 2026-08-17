@@ -14,7 +14,7 @@
   # GL/Vulkan loaders that already know to look there - a pip-installed
   # RAPIDS/PyTorch-style CUDA wheel just dlopen()s libcuda.so.1 via a plain
   # search path and won't find it without this. Paired with
-  # modules/core/nix-ld.nix (which lets the wheel's compiled extensions run
+  # modules/core/packages.nix's nix-ld (which lets the wheel's compiled extensions run
   # at all on NixOS in the first place). Laptop-only: the desktop has no
   # NVIDIA GPU, so this would just be dead weight there.
   environment.variables.LD_LIBRARY_PATH = "/run/opengl-driver/lib";

@@ -218,15 +218,16 @@
       # is installed into the system config - these are throwaway shells.
       devShells.${system} = rec {
         # desktop's GPU: AMD Radeon RX 9060 XT (Navi 44), amdgpu driver -> ROCm.
-        # extraShells = [ browserAgent ] fuses cvbrowser/playwright-mcp/curl
-        # into this same shell instance (see mkAiShell's inputsFrom comment
-        # above) - `rec` makes this a valid forward reference to
-        # `browserAgent`, defined further down in this same attrset; Nix
-        # attrsets are lazily bound so definition order here doesn't matter.
-        ai = mkAiShell { gpu = "amd"; extraShells = [ browserAgent ]; };
+        # extraShells = [ browserAgent camoufox ] fuses cvbrowser/playwright-mcp/curl
+        # and camoufox (Firefox anti-detect engine + Qt GUI) into this same shell
+        # instance (see mkAiShell's inputsFrom comment above) - `rec` makes this
+        # a valid forward reference to `browserAgent` and `camoufox`, defined
+        # further down in this same attrset; Nix attrsets are lazily bound so
+        # definition order here doesn't matter.
+        ai = mkAiShell { gpu = "amd"; extraShells = [ browserAgent camoufox ]; };
 
         # laptop's GPU: NVIDIA GeForce RTX 2050 (Ampere, GA107) -> CUDA.
-        ai-laptop = mkAiShell { gpu = "nvidia"; extraShells = [ browserAgent ]; };
+        ai-laptop = mkAiShell { gpu = "nvidia"; extraShells = [ browserAgent camoufox ]; };
 
         pentest =
           let
@@ -323,7 +324,7 @@
         # RAPIDS (cuDF/cuML/...) has no real nixpkgs packaging - it ships as
         # prebuilt manylinux pip wheels. Their compiled extensions hardcode
         # a standard-distro dynamic linker path that doesn't exist on
-        # NixOS - modules/core/nix-ld.nix fixes that system-wide, and
+        # NixOS - modules/core/packages.nix's nix-ld fixes that system-wide, and
         # modules/hardware/nvidia-prime.nix (laptop-only) exports
         # LD_LIBRARY_PATH so they can also find the actual GPU driver's
         # libcuda.so.1. With both in place a plain venv + pip install just
@@ -364,7 +365,7 @@
             cudaPackages.cuda_nvcc
           ]);
           shellHook = ''
-            # nix-ld (modules/core/nix-ld.nix) only covers a pip-installed
+            # nix-ld (modules/core/packages.nix) only covers a pip-installed
             # wheel's *own* initial dynamic loading. RAPIDS' native libs
             # then dlopen() several more .so's themselves from already-
             # running Python (ctypes), which uses plain LD_LIBRARY_PATH
@@ -476,6 +477,89 @@
             python3Packages.jinja2
             python3Packages.pyyaml
           ];
+        };
+
+        # Camoufox: anti-detect browser (custom C++-patched Firefox engine +
+        # Playwright stealth wrapper and PySide6/Qt GUI manager).
+        # Installed via venv + pip with full native library linkages (GTK3,
+        # NSS, NSPR, Wayland, X11, OpenGL, ALSA) supplied via LD_LIBRARY_PATH
+        # and nix-ld so both `camoufox fetch` (downloaded Firefox binary) and
+        # `camoufox gui` (PySide6 Qt GUI) run out-of-the-box on NixOS.
+        camoufox = pkgs.mkShell {
+          name = "camoufox-devshell";
+          packages = with pkgs; [
+            python3
+            python3Packages.pip
+            python3Packages.virtualenv
+            curl
+            procps
+          ];
+          shellHook = ''
+            export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath (with pkgs; [
+              stdenv.cc.cc.lib
+              zlib
+              openssl
+              curl
+              glib
+              gtk3
+              pango
+              cairo
+              gdk-pixbuf
+              atk
+              at-spi2-atk
+              at-spi2-core
+              dbus
+              libxkbcommon
+              xorg.libX11
+              xorg.libXcomposite
+              xorg.libXdamage
+              xorg.libXext
+              xorg.libXfixes
+              xorg.libXrandr
+              xorg.libxcb
+              xorg.libXcursor
+              xorg.libXi
+              xorg.libXrender
+              xorg.libXtst
+              mesa
+              libglvnd
+              libGL
+              alsa-lib
+              nspr
+              nss
+              cups
+              fontconfig
+              freetype
+              ffmpeg
+              systemd
+              libdrm
+              wayland
+            ])}:''${LD_LIBRARY_PATH:-}"
+
+            # PySide6 / Qt6 platform plugin configuration
+            export QT_QPA_PLATFORM="wayland;xcb"
+
+            venv="$HOME/.venvs/camoufox"
+            if [ -d "$venv" ]; then
+              # shellcheck disable=SC1091
+              source "$venv/bin/activate"
+            else
+              echo "==> Entorno Camoufox no encontrado en $venv. Configuración inicial:"
+              echo "    Creando virtualenv e instalando Camoufox con soporte GUI y GeoIP..."
+              python3 -m venv "$venv"
+              # shellcheck disable=SC1091
+              source "$venv/bin/activate"
+              pip install --upgrade pip
+              pip install "camoufox[gui,geoip]"
+              echo "    Descargando binario del navegador Camoufox..."
+              camoufox fetch || true
+              echo ""
+              echo "==> ¡Camoufox configurado con éxito!"
+              echo "    - Para abrir el gestor gráfico: camoufox gui"
+              echo "    - Para actualizar el motor:      camoufox fetch"
+              echo "    - Para usar en Python:           from camoufox.sync_api import Camoufox"
+            fi
+          '';
         };
 
         # Shared browser-automation endpoint for AI coding agents (Claude

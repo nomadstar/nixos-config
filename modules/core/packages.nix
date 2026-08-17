@@ -9,6 +9,55 @@
   programs.neovim.enable = true;
   programs.mtr.enable = true;
 
+  # Lets prebuilt (non-nixpkgs-packaged) Linux binaries run unmodified -
+  # RAPIDS'/PyTorch's pip wheels (compiled extensions), VSCode extensions'
+  # native bits, Camoufox/Playwright browser binaries, Qt/PySide6, etc.
+  programs.nix-ld.enable = true;
+  programs.nix-ld.libraries = with pkgs; [
+    stdenv.cc.cc.lib
+    zlib
+    openssl
+    curl
+    ncurses
+    icu
+
+    # GUI / Browser / Qt / Playwright / Camoufox runtime dependencies
+    glib
+    gtk3
+    pango
+    cairo
+    gdk-pixbuf
+    atk
+    at-spi2-atk
+    at-spi2-core
+    dbus
+    libxkbcommon
+    xorg.libX11
+    xorg.libXcomposite
+    xorg.libXdamage
+    xorg.libXext
+    xorg.libXfixes
+    xorg.libXrandr
+    xorg.libxcb
+    xorg.libXcursor
+    xorg.libXi
+    xorg.libXrender
+    xorg.libXtst
+    mesa
+    libglvnd
+    libGL
+    alsa-lib
+    nspr
+    nss
+    cups
+    fontconfig
+    freetype
+    ffmpeg
+    systemd
+    libdrm
+    wayland
+  ];
+
   # dconf/gsettings backend for GTK4/libadwaita apps (accent color, dark
   # mode, ...) - not pulled in automatically outside of GNOME.
   programs.dconf.enable = true;
