@@ -569,6 +569,19 @@
                   [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
                 }
 
+                # Indeed/Fiverr front their apply/gig flows with Cloudflare
+                # Turnstile; LinkedIn's own detection doesn't seem to trigger
+                # it for an authenticated, headed, human-paced session (see
+                # cvbrowser's own doc comment above for why). The only sound
+                # response to a challenge is a real human solving it - not a
+                # stealth patch - so this is printed for whichever agent
+                # (Claude Code/Codex/agy) is driving the MCP session, telling
+                # it to stop and hand off instead of retrying or guessing.
+                challenge_protocol() {
+                  echo "CHALLENGE PROTOCOL: if a Cloudflare Turnstile / CAPTCHA / \"verify you are human\" wall appears (an iframe from challenges.cloudflare.com is the usual tell - seen on Indeed and Fiverr, not LinkedIn) - STOP."
+                  echo "Do not retry the action and do not try to click/solve it yourself. Tell the user and wait: this browser is headed, so they solve it directly in the visible window; resume only once they confirm it's done."
+                }
+
                 cmd="status"
                 if [ "$#" -gt 0 ]; then
                   cmd="$1"
@@ -618,6 +631,7 @@
                     if [ "$ready" = "1" ]; then
                       echo "started (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp  (legacy SSE: http://$HOST:$PORT/sse)"
                       echo "$profile_description"
+                      challenge_protocol
                     else
                       echo "failed to start - see $LOGFILE" >&2
                       rm -f "$PIDFILE"
@@ -671,8 +685,11 @@
                   profile)
                     echo "$PROFILE_DIR"
                     ;;
+                  protocol)
+                    challenge_protocol
+                    ;;
                   *)
-                    echo "usage: cvbrowser {start|stop|kill|status|logs|login|profile}" >&2
+                    echo "usage: cvbrowser {start|stop|kill|status|logs|login|profile|protocol}" >&2
                     exit 1
                     ;;
                 esac
