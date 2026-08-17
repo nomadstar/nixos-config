@@ -16,6 +16,14 @@
   programs.nix-ld.libraries = with pkgs; [
     stdenv.cc.cc.lib
     zlib
+    zstd
+    brotli
+    bzip2
+    expat
+    harfbuzz
+    krb5
+    libpulseaudio
+    speechd
     openssl
     curl
     ncurses
@@ -43,6 +51,13 @@
     xorg.libXi
     xorg.libXrender
     xorg.libXtst
+    xorg.libxkbfile
+    xorg.xcbutil
+    xorg.xcbutilcursor
+    xorg.xcbutilimage
+    xorg.xcbutilkeysyms
+    xorg.xcbutilrenderutil
+    xorg.xcbutilwm
     mesa
     libglvnd
     libGL

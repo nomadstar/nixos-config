@@ -498,6 +498,14 @@
             export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath (with pkgs; [
               stdenv.cc.cc.lib
               zlib
+              zstd
+              brotli
+              bzip2
+              expat
+              harfbuzz
+              krb5
+              libpulseaudio
+              speechd
               openssl
               curl
               glib
@@ -521,6 +529,13 @@
               xorg.libXi
               xorg.libXrender
               xorg.libXtst
+              xorg.libxkbfile
+              xorg.xcbutil
+              xorg.xcbutilcursor
+              xorg.xcbutilimage
+              xorg.xcbutilkeysyms
+              xorg.xcbutilrenderutil
+              xorg.xcbutilwm
               mesa
               libglvnd
               libGL
