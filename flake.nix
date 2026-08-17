@@ -67,7 +67,7 @@
 
       # GPU policy for the ai devShell, per host: NVIDIA -> CUDA, AMD -> ROCm,
       # anything else (no dGPU, Intel-only, etc.) -> no GPU packages added.
-      mkAiShell = { gpu ? "none" }:
+      mkAiShell = { gpu ? "none", extraShells ? [ ] }:
         let
           gpuPackages =
             if gpu == "amd" then
@@ -79,6 +79,19 @@
         in
         pkgs.mkShell {
           name = "ai-devshell";
+          # Pulls in extraShells' packages + shellHook (mkShell concatenates
+          # every inputsFrom entry) - same pattern `developer` below uses for
+          # rapids. Called with `extraShells = [ browserAgent ]` (see the
+          # devShells block), so cvbrowser/playwright-mcp/curl land in this
+          # same shell instance instead of a separate `nix develop
+          # .#browserAgent`. That separation was the actual cause of past
+          # Codex errors: Codex's MCP client (~/.codex/config.toml ->
+          # 127.0.0.1:8931/mcp) would try to connect from inside the `ai`
+          # shell while `cvbrowser start` had only ever been run - or was
+          # possible to run - from the other, separate `browserAgent` shell.
+          # With both shells' packages merged here, `cvbrowser start` and
+          # `codex`/`claude`/`agy` all live in the one instance.
+          inputsFrom = extraShells;
           packages = with pkgs; [
             python3
             python3Packages.pip
@@ -205,10 +218,15 @@
       # is installed into the system config - these are throwaway shells.
       devShells.${system} = rec {
         # desktop's GPU: AMD Radeon RX 9060 XT (Navi 44), amdgpu driver -> ROCm.
-        ai = mkAiShell { gpu = "amd"; };
+        # extraShells = [ browserAgent ] fuses cvbrowser/playwright-mcp/curl
+        # into this same shell instance (see mkAiShell's inputsFrom comment
+        # above) - `rec` makes this a valid forward reference to
+        # `browserAgent`, defined further down in this same attrset; Nix
+        # attrsets are lazily bound so definition order here doesn't matter.
+        ai = mkAiShell { gpu = "amd"; extraShells = [ browserAgent ]; };
 
         # laptop's GPU: NVIDIA GeForce RTX 2050 (Ampere, GA107) -> CUDA.
-        ai-laptop = mkAiShell { gpu = "nvidia"; };
+        ai-laptop = mkAiShell { gpu = "nvidia"; extraShells = [ browserAgent ]; };
 
         pentest =
           let
@@ -504,6 +522,15 @@
         #   `httpUrl` fields are not supported):
         #     { "mcpServers": { "playwright": {
         #         "serverUrl": "http://127.0.0.1:8931/mcp" } } }
+        #
+        # Fused into `ai`/`ai-laptop` above via inputsFrom (mkAiShell's
+        # `extraShells` argument), so `nix develop .#ai` alone already has
+        # `cvbrowser` on PATH next to codex/claude-code/agy - no separate
+        # `nix develop .#browserAgent` shell needed for normal use. Kept as
+        # its own standalone attribute too (same reasoning as `rapids`
+        # staying separate from `developer`): a lighter shell for headless/
+        # CI-style browser-only use, or for driving the browser from a
+        # terminal that isn't running any AI agent at all.
         browserAgent =
           let
             cvbrowser = pkgs.writeShellApplication {
