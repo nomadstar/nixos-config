@@ -78,10 +78,17 @@
   programs.bash = {
     enable = true;
     initExtra = ''
-      # Camoufox queries GitHub's API across multiple repos and tags;
-      # provide GITHUB_TOKEN automatically from gh CLI to prevent hitting
-      # GitHub's 60 req/hr unauthenticated rate limit.
+      # Camoufox helper:
+      # 1. Purges corrupted/empty addon cache directories (e.g. UBO missing manifest.json)
+      #    so Camoufox re-downloads/extracts them without throwing InvalidAddonPath.
+      # 2. Provides GITHUB_TOKEN automatically from gh CLI to prevent hitting
+      #    GitHub's 60 req/hr unauthenticated rate limit.
       camoufox() {
+        local ubo_dir="$HOME/.cache/camoufox/addons/UBO"
+        if [ -d "$ubo_dir" ] && [ ! -f "$ubo_dir/manifest.json" ]; then
+          rm -rf "$ubo_dir"
+        fi
+
         if [ -z "$GITHUB_TOKEN" ] && command -v gh >/dev/null 2>&1; then
           GITHUB_TOKEN="$(gh auth token 2>/dev/null)" command camoufox "$@"
         else
