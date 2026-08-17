@@ -536,6 +536,7 @@
                 cmd="status"
                 if [ "$#" -gt 0 ]; then
                   cmd="$1"
+                  shift
                 fi
 
                 case "$cmd" in
@@ -544,12 +545,12 @@
                       echo "already running (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp"
                       exit 0
                     fi
-                    extra_args=""
+                    extra_args=()
                     if [ "''${CVBROWSER_HEADLESS:-0}" = "1" ]; then
-                      extra_args="--headless"
+                      extra_args+=(--headless)
                     fi
-                    # shellcheck disable=SC2086
-                    nohup mcp-server-playwright --browser firefox --host "$HOST" --port "$PORT" --isolated $extra_args \
+                    extra_args+=("$@")
+                    nohup mcp-server-playwright --browser firefox --host "$HOST" --port "$PORT" --isolated "''${extra_args[@]}" \
                       < /dev/null \
                       > "$LOGFILE" 2>&1 &
                     echo $! > "$PIDFILE"
