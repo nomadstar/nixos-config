@@ -505,10 +505,12 @@
         # detached with its PID recorded in $XDG_RUNTIME_DIR/cvbrowser/, and
         # `cvbrowser kill` SIGKILLs that PID plus its children (the actual
         # Firefox process tree) the instant anything looks wrong - the whole
-        # point of the exercise. `--isolated` keeps the browser profile
-        # in-memory only (nothing persisted to disk to clean up after a
-        # kill); headed by default so you can actually watch what an agent
-        # is doing (CVBROWSER_HEADLESS=1 for headless instead).
+        # point of the exercise. The browser uses its own persistent profile
+        # under $XDG_DATA_HOME/cvbrowser/firefox-profile so a human can log in
+        # once without exposing or reusing their everyday Firefox profile.
+        # CVBROWSER_ISOLATED=1 opts back into an in-memory throwaway profile.
+        # It is headed by default so the user can watch every agent action
+        # (CVBROWSER_HEADLESS=1 for headless instead).
         #
         # Client wiring (run once per tool, after `cvbrowser start`):
         #   Claude Code: claude mcp add --transport http --scope user \
@@ -538,12 +540,15 @@
               runtimeInputs = [ pkgs.playwright-mcp pkgs.procps pkgs.curl ];
               text = ''
                 RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/tmp}/cvbrowser"
+                DATA_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/cvbrowser"
+                PROFILE_DIR="''${CVBROWSER_PROFILE_DIR:-$DATA_DIR/firefox-profile}"
                 PIDFILE="$RUNTIME_DIR/mcp.pid"
                 LOGFILE="$RUNTIME_DIR/mcp.log"
                 HOST=127.0.0.1
                 PORT=8931
 
-                mkdir -p "$RUNTIME_DIR"
+                mkdir -p "$RUNTIME_DIR" "$DATA_DIR" "$PROFILE_DIR"
+                chmod 700 "$RUNTIME_DIR" "$DATA_DIR" "$PROFILE_DIR"
                 export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
                 # nixpkgs' mcp-server-playwright wrapper does
                 # `export PLAYWRIGHT_MCP_BROWSER=''${PLAYWRIGHT_MCP_BROWSER-'chromium'}`
@@ -581,8 +586,15 @@
                     if [ "''${CVBROWSER_HEADLESS:-0}" = "1" ]; then
                       extra_args+=(--headless)
                     fi
+                    if [ "''${CVBROWSER_ISOLATED:-0}" = "1" ]; then
+                      extra_args+=(--isolated)
+                      profile_description="ephemeral in-memory profile"
+                    else
+                      extra_args+=(--user-data-dir "$PROFILE_DIR")
+                      profile_description="dedicated profile: $PROFILE_DIR"
+                    fi
                     extra_args+=("$@")
-                    nohup mcp-server-playwright --browser firefox --host "$HOST" --port "$PORT" --isolated "''${extra_args[@]}" \
+                    nohup mcp-server-playwright --browser firefox --host "$HOST" --port "$PORT" "''${extra_args[@]}" \
                       < /dev/null \
                       > "$LOGFILE" 2>&1 &
                     echo $! > "$PIDFILE"
@@ -601,6 +613,7 @@
                     done
                     if [ "$ready" = "1" ]; then
                       echo "started (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp  (legacy SSE: http://$HOST:$PORT/sse)"
+                      echo "$profile_description"
                     else
                       echo "failed to start - see $LOGFILE" >&2
                       rm -f "$PIDFILE"
@@ -637,8 +650,11 @@
                   logs)
                     tail -n 50 -f "$LOGFILE"
                     ;;
+                  profile)
+                    echo "$PROFILE_DIR"
+                    ;;
                   *)
-                    echo "usage: cvbrowser {start|stop|kill|status|logs}" >&2
+                    echo "usage: cvbrowser {start|stop|kill|status|logs|profile}" >&2
                     exit 1
                     ;;
                 esac
