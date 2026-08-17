@@ -508,7 +508,7 @@
           let
             cvbrowser = pkgs.writeShellApplication {
               name = "cvbrowser";
-              runtimeInputs = [ pkgs.playwright-mcp pkgs.procps ];
+              runtimeInputs = [ pkgs.playwright-mcp pkgs.procps pkgs.curl ];
               text = ''
                 RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/tmp}/cvbrowser"
                 PIDFILE="$RUNTIME_DIR/mcp.pid"
@@ -550,13 +550,27 @@
                     fi
                     # shellcheck disable=SC2086
                     nohup mcp-server-playwright --browser firefox --host "$HOST" --port "$PORT" --isolated $extra_args \
+                      < /dev/null \
                       > "$LOGFILE" 2>&1 &
                     echo $! > "$PIDFILE"
-                    sleep 1
-                    if is_running; then
+                    ready=0
+                    for _ in $(seq 1 50); do
+                      if ! is_running; then
+                        break
+                      fi
+                      # A bare GET returns 400 once the MCP HTTP transport is
+                      # listening; curl only needs to establish the connection.
+                      if curl --silent --output /dev/null "http://$HOST:$PORT/mcp"; then
+                        ready=1
+                        break
+                      fi
+                      sleep 0.1
+                    done
+                    if [ "$ready" = "1" ]; then
                       echo "started (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp  (legacy SSE: http://$HOST:$PORT/sse)"
                     else
                       echo "failed to start - see $LOGFILE" >&2
+                      rm -f "$PIDFILE"
                       exit 1
                     fi
                     ;;
