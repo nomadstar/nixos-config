@@ -75,7 +75,21 @@
     };
   };
 
-  programs.bash.enable = true;
+  programs.bash = {
+    enable = true;
+    initExtra = ''
+      # Camoufox queries GitHub's API across multiple repos and tags;
+      # provide GITHUB_TOKEN automatically from gh CLI to prevent hitting
+      # GitHub's 60 req/hr unauthenticated rate limit.
+      camoufox() {
+        if [ -z "$GITHUB_TOKEN" ] && command -v gh >/dev/null 2>&1; then
+          GITHUB_TOKEN="$(gh auth token 2>/dev/null)" command camoufox "$@"
+        else
+          command camoufox "$@"
+        fi
+      }
+    '';
+  };
   programs.oh-my-posh = {
     enable = true;
     enableBashIntegration = true;
