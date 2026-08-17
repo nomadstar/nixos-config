@@ -506,8 +506,12 @@
         # `cvbrowser kill` SIGKILLs that PID plus its children (the actual
         # Firefox process tree) the instant anything looks wrong - the whole
         # point of the exercise. The browser uses its own persistent profile
-        # under $XDG_DATA_HOME/cvbrowser/firefox-profile so a human can log in
-        # once without exposing or reusing their everyday Firefox profile.
+        # under $XDG_DATA_HOME/cvbrowser/firefox-profile-playwright so a human
+        # can log in once without exposing or reusing their everyday Firefox
+        # profile. `cvbrowser login` launches the exact Playwright-pinned
+        # Firefox build without automation for providers that reject automated
+        # OAuth browsers; using the system Firefox here can upgrade the profile
+        # and make the pinned build refuse to open it afterwards.
         # CVBROWSER_ISOLATED=1 opts back into an in-memory throwaway profile.
         # It is headed by default so the user can watch every agent action
         # (CVBROWSER_HEADLESS=1 for headless instead).
@@ -541,7 +545,7 @@
               text = ''
                 RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/tmp}/cvbrowser"
                 DATA_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/cvbrowser"
-                PROFILE_DIR="''${CVBROWSER_PROFILE_DIR:-$DATA_DIR/firefox-profile}"
+                PROFILE_DIR="''${CVBROWSER_PROFILE_DIR:-$DATA_DIR/firefox-profile-playwright}"
                 PIDFILE="$RUNTIME_DIR/mcp.pid"
                 LOGFILE="$RUNTIME_DIR/mcp.log"
                 HOST=127.0.0.1
@@ -650,11 +654,25 @@
                   logs)
                     tail -n 50 -f "$LOGFILE"
                     ;;
+                  login)
+                    if is_running; then
+                      echo "stop cvbrowser before opening its profile for manual login" >&2
+                      exit 1
+                    fi
+                    firefox_bins=("$PLAYWRIGHT_BROWSERS_PATH"/firefox-*/firefox/firefox)
+                    if [ "''${#firefox_bins[@]}" -ne 1 ] || [ ! -x "''${firefox_bins[0]}" ]; then
+                      echo "cannot locate the Playwright-pinned Firefox executable" >&2
+                      exit 1
+                    fi
+                    echo "opening dedicated profile for manual login: $PROFILE_DIR"
+                    echo "close Firefox completely before running cvbrowser start"
+                    exec "''${firefox_bins[0]}" --no-remote --profile "$PROFILE_DIR"
+                    ;;
                   profile)
                     echo "$PROFILE_DIR"
                     ;;
                   *)
-                    echo "usage: cvbrowser {start|stop|kill|status|logs|profile}" >&2
+                    echo "usage: cvbrowser {start|stop|kill|status|logs|login|profile}" >&2
                     exit 1
                     ;;
                 esac
