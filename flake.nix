@@ -545,6 +545,11 @@
                       echo "already running (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp"
                       exit 0
                     fi
+                    if curl --silent --output /dev/null --connect-timeout 0.2 "http://$HOST:$PORT/mcp"; then
+                      echo "cannot start: $HOST:$PORT is already served by another process" >&2
+                      echo "stop that process before running cvbrowser start" >&2
+                      exit 1
+                    fi
                     extra_args=()
                     if [ "''${CVBROWSER_HEADLESS:-0}" = "1" ]; then
                       extra_args+=(--headless)
@@ -561,7 +566,7 @@
                       fi
                       # A bare GET returns 400 once the MCP HTTP transport is
                       # listening; curl only needs to establish the connection.
-                      if curl --silent --output /dev/null "http://$HOST:$PORT/mcp"; then
+                      if curl --silent --output /dev/null "http://$HOST:$PORT/mcp" && is_running; then
                         ready=1
                         break
                       fi
