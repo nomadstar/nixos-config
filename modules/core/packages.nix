@@ -106,6 +106,22 @@
     # File manager (hyprland.conf's $fileManager, SUPER+W)
     nemo
 
+    # GUI archive manager (zip/7z/tar/rar/iso...). xarchiver over
+    # file-roller: it's built for exactly this kind of lightweight
+    # GTK-but-not-full-GNOME setup (thunar/pcmanfm/nemo) without pulling in
+    # nautilus/gnome-autoar as deps, and nemo auto-detects it on PATH to
+    # enable its own right-click Extract Here/Compress... context menu
+    # entries (same detection mechanism as the terminal exec below).
+    xarchiver
+
+    # Provides org.cinnamon.desktop.default-applications.terminal, the
+    # gsettings schema nemo's "Open in Terminal" reads (see
+    # hosts/*/home.nix's dconf.settings for the actual exec=alacritty
+    # value) - nemo is Cinnamon's file manager, but this system doesn't run
+    # Cinnamon, so that schema is otherwise never installed/compiled into
+    # /run/current-system's gsettings schema path.
+    cinnamon-desktop
+
     # CLI
     git
     wget
