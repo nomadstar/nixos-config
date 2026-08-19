@@ -35,6 +35,17 @@
     accent-color = "green";
   };
 
+  # Nemo's "Open in Terminal" (toolbar button + right-click) reads this
+  # Cinnamon schema (see modules/core/packages.nix's cinnamon-desktop
+  # comment for why that schema needs to be installed at all) instead of
+  # $TERMINAL - default is gnome-terminal, which isn't installed here.
+  # exec-arg left empty: nemo sets the terminal's cwd itself via spawn, it
+  # doesn't need alacritty's `--` option-terminator.
+  dconf.settings."org/cinnamon/desktop/applications/terminal" = {
+    exec = "alacritty";
+    exec-arg = "";
+  };
+
   # Matrix-green cursor (see modules/desktop/matrix-cursors.nix for how the
   # theme itself is built). gtk/x11 here cover GTK apps and XWayland; the
   # Wayland-native cursor Hyprland itself draws is set via `env =` in
