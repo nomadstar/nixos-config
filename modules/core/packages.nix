@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, pkgsUnstable, ... }:
 
 {
   # Needed for discord and wpsoffice (both unfree). Everything else installed
@@ -152,9 +152,6 @@
     tcpdump
     iperf3
 
-    # Video/audio downloader
-    yt-dlp
-
     # Wayland wallpaper daemon for hyprland.conf's exec-once
     hyprpaper
 
@@ -252,7 +249,11 @@
     gst_all_1.gst-plugins-ugly
     gst_all_1.gst-libav
     gst_all_1.gst-vaapi
-  ];
+  ] ++ (with pkgsUnstable; [
+    # Ships new releases often enough that waiting for nixos-25.11 means
+    # running months-old versions - see flake.nix's pkgsUnstable comment.
+    yt-dlp
+  ]);
 
   environment.sessionVariables.GST_PLUGIN_SYSTEM_PATH_1_0 = lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (with pkgs.gst_all_1; [
     gstreamer 
