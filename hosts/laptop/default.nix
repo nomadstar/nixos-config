@@ -9,10 +9,24 @@
     ../../modules/hardware/nvidia-prime.nix
     ../../modules/hardware/backlight.nix
     ../../modules/hardware/rtl-sdr.nix
+    ../../modules/hardware/windows-bt-sync.nix
   ];
 
   networking.hostName = "nanixos";
   time.timeZone = "America/Santiago";
+
+  # This laptop dual-boots Windows (nvme0n1p3 - confirmed via lsblk as the
+  # 438.7G "Basic data partition", distinct from nvme0n1p4's 813M WinRE
+  # recovery partition). Mounted read-only: windows-bt-sync.nix's service
+  # only ever reads the registry hive from here via `hivexregedit --export`.
+  # `nofail` so a missing/failing Windows partition doesn't block booting
+  # Linux; windows-bt-sync's service (RequiresMountsFor this path) then
+  # simply doesn't run that boot instead of failing loudly.
+  fileSystems."/mnt/winC" = {
+    device = "/dev/disk/by-uuid/9E7EABFF7EABCE79";
+    fsType = "ntfs3";
+    options = [ "ro" "nofail" ];
+  };
 
   # This laptop's internal panel enumerates as eDP-1, not the desktop's
   # DP-1 - see modules/desktop/regreet.nix for why a mismatch here makes
