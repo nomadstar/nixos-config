@@ -4,6 +4,15 @@
   # networking.hostName is set per-host, not here.
   networking.networkmanager.enable = true;
 
+  # OpenVPN: the NetworkManager plugin lets .ovpn profiles be imported and
+  # driven from nm-applet (Edit Connections > Import) like any other
+  # connection, same GUI-first workflow wifi-panel.nix's nm-applet already
+  # covers for Wi-Fi. pkgs.openvpn on top of that for driving a config
+  # directly from the CLI (`openvpn --config foo.ovpn`) when that's easier
+  # than importing it.
+  networking.networkmanager.plugins = [ pkgs.networkmanager-openvpn ];
+  environment.systemPackages = [ pkgs.openvpn ];
+
   # Key-only, no root - this box has real global IPv6 addresses (not just
   # the private IPv4 behind the router's NAT), and NixOS's firewall opens
   # 22/tcp for both address families equally (services.openssh.openFirewall
