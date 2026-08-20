@@ -10,6 +10,7 @@
     ./hypremoji.nix
     ./matrix-cursors.nix
     ./wifi-panel.nix
+    ./blueman.nix
     ./opensnitch.nix
     ./devshell-picker.nix
     ./qt-theme.nix

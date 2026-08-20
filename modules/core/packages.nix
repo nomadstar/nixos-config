@@ -32,6 +32,13 @@ in
   programs.neovim.enable = true;
   programs.mtr.enable = true;
 
+  # iOS device access over USB (ifuse mounts, libimobiledevice's idevice*
+  # CLI tools below). The daemon itself, not just the package: it's what
+  # multiplexes USB connections to the phone and creates /run/usbmuxd's
+  # socket - ifuse/idevicepair etc. can't reach the device without it
+  # running, so this needs to be enabled, not just have usbmuxd installed.
+  services.usbmuxd.enable = true;
+
   # Lets prebuilt (non-nixpkgs-packaged) Linux binaries run unmodified -
   # RAPIDS'/PyTorch's pip wheels (compiled extensions), VSCode extensions'
   # native bits, Camoufox/Playwright browser binaries, Qt/PySide6, etc.
@@ -162,6 +169,16 @@ in
     file
     pciutils
     usbutils
+
+    # iOS device access over USB (services.usbmuxd.enable above runs the
+    # actual daemon - this is just its CLI, `iproxy`, for TCP port
+    # forwarding over the USB mux). libimobiledevice: ideviceinfo,
+    # idevicepair, idevicebackup2, etc. ifuse: mount an iPhone/iPad's
+    # filesystem via FUSE (`ifuse ~/mnt/iphone` after pairing with
+    # idevicepair).
+    usbmuxd
+    libimobiledevice
+    ifuse
 
     # Shell utils
     ripgrep
