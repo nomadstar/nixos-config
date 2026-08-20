@@ -1,5 +1,28 @@
 { config, lib, pkgs, pkgsUnstable, ... }:
 
+let
+  # curl-cffi 0.15.0's test suite (test_verify, in particular) asserts on an
+  # old libcurl "SSL certificate problem" error string; the curl-impersonate
+  # build it's tested against here reports a newer, differently-worded
+  # hostname-mismatch message instead, so the assertion fails and the build
+  # breaks - a nixpkgs-unstable packaging bug (upstream hasn't pinned/patched
+  # it yet), not anything in this config. yt-dlp only uses curl-cffi as a
+  # runtime HTTP-impersonation backend, so skipping its test suite doesn't
+  # affect that.
+  #
+  # yt-dlp's package.nix doesn't expose curl-cffi as an overridable argument
+  # (it's pulled in internally via python3Packages.curl-cffi), so the fix has
+  # to go the other way: patch curl-cffi, then splice the patched derivation
+  # into yt-dlp's `dependencies` list in place of the stock one. (A
+  # `python3.override { packageOverrides = ...; }` on the whole pkgs set was
+  # tried first and silently had no effect - nixpkgs-unstable's python3
+  # derivation doesn't wire that argument through - hence this more direct
+  # substitution instead.)
+  fixedCurlCffi = pkgsUnstable.python3Packages.curl-cffi.overridePythonAttrs (_: { doCheck = false; });
+  yt-dlp = pkgsUnstable.yt-dlp.overridePythonAttrs (old: {
+    dependencies = map (d: if (d.pname or null) == "curl-cffi" then fixedCurlCffi else d) old.dependencies;
+  });
+in
 {
   # Needed for discord and wpsoffice (both unfree). Everything else installed
   # here stays free software; these are the deliberate exceptions.
@@ -252,6 +275,8 @@
   ] ++ (with pkgsUnstable; [
     # Ships new releases often enough that waiting for nixos-25.11 means
     # running months-old versions - see flake.nix's pkgsUnstable comment.
+    # (the patched local `yt-dlp` let-binding above shadows this `with`'s
+    # pkgsUnstable.yt-dlp - see the curl-cffi comment above.)
     yt-dlp
   ]);
 
