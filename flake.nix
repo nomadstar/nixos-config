@@ -69,6 +69,13 @@
       # anything else (no dGPU, Intel-only, etc.) -> no GPU packages added.
       mkAiShell = { gpu ? "none", extraShells ? [ ] }:
         let
+          camoufoxBrowser = pkgs.writeShellApplication {
+            name = "camoufox-browser";
+            runtimeInputs = [ pkgs.uv ];
+            text = ''
+              exec uvx --from camoufox-browser camoufox-browser "$@"
+            '';
+          };
           camoufoxMcp = pkgs.writeShellApplication {
             name = "camoufox-mcp";
             runtimeInputs = [ pkgs.uv ];
@@ -79,10 +86,7 @@
                 exit 0
               fi
 
-              # camoufox-mcp 0.1.0 imports the MCP Python SDK's v1 FastMCP
-              # module but leaves its dependency unbounded (`mcp>=1.0.0`).
-              # MCP 2 removed that module, so keep this tool on the v1 API.
-              exec uvx --with 'mcp<2' --from camoufox-mcp camoufox-mcp "$@"
+              exec uvx --from 'camoufox-browser[mcp]' camoufox-mcp "$@"
             '';
           };
           gpuPackages =
@@ -112,9 +116,10 @@
             python3
             python3Packages.pip
             python3Packages.virtualenv
-            # `uv` provides `uvx`; camoufoxMcp exposes `camoufox-mcp`
-            # directly and resolves it into uv's isolated package cache.
+            # `uv` provides `uvx`; these wrappers expose the maintained
+            # camoufox-browser CLI and its optional MCP server directly.
             uv
+            camoufoxBrowser
             camoufoxMcp
             claude-code.packages.${system}.default
             antigravity-nix.packages.${system}.google-antigravity-cli
