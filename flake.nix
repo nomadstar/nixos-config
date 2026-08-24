@@ -73,6 +73,12 @@
             name = "camoufox-mcp";
             runtimeInputs = [ pkgs.uv ];
             text = ''
+              if [ -t 0 ]; then
+                echo "camoufox-mcp is a stdio MCP server, not an interactive command."
+                echo "Configure your MCP client to launch: camoufox-mcp"
+                exit 0
+              fi
+
               # camoufox-mcp 0.1.0 imports the MCP Python SDK's v1 FastMCP
               # module but leaves its dependency unbounded (`mcp>=1.0.0`).
               # MCP 2 removed that module, so keep this tool on the v1 API.
