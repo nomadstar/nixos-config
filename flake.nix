@@ -69,6 +69,13 @@
       # anything else (no dGPU, Intel-only, etc.) -> no GPU packages added.
       mkAiShell = { gpu ? "none", extraShells ? [ ] }:
         let
+          camoufoxMcp = pkgs.writeShellApplication {
+            name = "camoufox-mcp";
+            runtimeInputs = [ pkgs.uv ];
+            text = ''
+              exec uvx --from camoufox-mcp camoufox-mcp "$@"
+            '';
+          };
           gpuPackages =
             if gpu == "amd" then
               (with pkgs; [ rocmPackages.rocminfo rocmPackages.rocm-smi ])
@@ -96,6 +103,10 @@
             python3
             python3Packages.pip
             python3Packages.virtualenv
+            # `uv` provides `uvx`; camoufoxMcp exposes `camoufox-mcp`
+            # directly and resolves it into uv's isolated package cache.
+            uv
+            camoufoxMcp
             claude-code.packages.${system}.default
             antigravity-nix.packages.${system}.google-antigravity-cli
           ] ++ (with pkgsUnstable; [
