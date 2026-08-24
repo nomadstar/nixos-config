@@ -73,7 +73,10 @@
             name = "camoufox-mcp";
             runtimeInputs = [ pkgs.uv ];
             text = ''
-              exec uvx --from camoufox-mcp camoufox-mcp "$@"
+              # camoufox-mcp 0.1.0 imports the MCP Python SDK's v1 FastMCP
+              # module but leaves its dependency unbounded (`mcp>=1.0.0`).
+              # MCP 2 removed that module, so keep this tool on the v1 API.
+              exec uvx --with 'mcp<2' --from camoufox-mcp camoufox-mcp "$@"
             '';
           };
           gpuPackages =
