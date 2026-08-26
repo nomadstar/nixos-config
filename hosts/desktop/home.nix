@@ -22,6 +22,15 @@
   xdg.configFile."wofi/config".source = ../../home/wofi/config;
   xdg.configFile."wofi/style.css".source = ../../home/wofi/style.css;
   xdg.configFile."mako/config".source = ../../home/mako/config;
+  xdg.configFile."containers/policy.json".text = builtins.toJSON {
+    default = [{ type = "reject"; }];
+    transports = {
+      docker."docker.io/library" = [{ type = "insecureAcceptAnything"; }];
+      docker."docker.io/nvidia" = [{ type = "insecureAcceptAnything"; }];
+      docker."nvcr.io/nvidia" = [{ type = "insecureAcceptAnything"; }];
+      docker-daemon."" = [{ type = "insecureAcceptAnything"; }];
+    };
+  };
 
   # Personal Neovim (NvChad-based) config from the `nvimConfig` flake input -
   # whole-directory symlink, same reasoning as the dotfiles entries above.

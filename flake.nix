@@ -69,6 +69,26 @@
       # anything else (no dGPU, Intel-only, etc.) -> no GPU packages added.
       mkAiShell = { gpu ? "none", extraShells ? [ ] }:
         let
+          camoufoxBrowser = pkgs.writeShellApplication {
+            name = "camoufox-browser";
+            runtimeInputs = [ pkgs.uv ];
+            text = ''
+              exec uvx --from camoufox-browser camoufox-browser "$@"
+            '';
+          };
+          camoufoxMcp = pkgs.writeShellApplication {
+            name = "camoufox-mcp";
+            runtimeInputs = [ pkgs.uv ];
+            text = ''
+              if [ -t 0 ]; then
+                echo "camoufox-mcp is a stdio MCP server, not an interactive command."
+                echo "Configure your MCP client to launch: camoufox-mcp"
+                exit 0
+              fi
+
+              exec uvx --from 'camoufox-browser[mcp]' camoufox-mcp "$@"
+            '';
+          };
           gpuPackages =
             if gpu == "amd" then
               (with pkgs; [ rocmPackages.rocminfo rocmPackages.rocm-smi ])
@@ -96,6 +116,11 @@
             python3
             python3Packages.pip
             python3Packages.virtualenv
+            # `uv` provides `uvx`; these wrappers expose the maintained
+            # camoufox-browser CLI and its optional MCP server directly.
+            uv
+            camoufoxBrowser
+            camoufoxMcp
             claude-code.packages.${system}.default
             antigravity-nix.packages.${system}.google-antigravity-cli
           ] ++ (with pkgsUnstable; [

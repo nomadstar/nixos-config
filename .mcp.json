@@ -3,6 +3,10 @@
     "codebase-memory-mcp": {
       "command": "codebase-memory-mcp",
       "args": []
+    },
+    "camoufox": {
+      "command": "camoufox-mcp",
+      "args": []
     }
   }
 }
