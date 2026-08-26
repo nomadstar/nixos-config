@@ -25,6 +25,22 @@
     defaultNetwork.settings.dns_enabled = true;
   };
 
+  # Podman/buildah consult these files even for rootless builds. Declare them
+  # explicitly so the NixOS generation always provides policy.json and a
+  # deterministic registry for short image names (for example node:20-alpine).
+  virtualisation.containers = {
+    policy = {
+      default = [{ type = "reject"; }];
+      transports = {
+        docker."docker.io/library" = [{ type = "insecureAcceptAnything"; }];
+        docker."docker.io/nvidia" = [{ type = "insecureAcceptAnything"; }];
+        docker."nvcr.io/nvidia" = [{ type = "insecureAcceptAnything"; }];
+        docker-daemon."" = [{ type = "insecureAcceptAnything"; }];
+      };
+    };
+    registries.search = [ "docker.io" ];
+  };
+
   environment.systemPackages = [ pkgs.podman-compose ];
 
   # qemu already ships user-mode emulators for every guest arch (qemu-aarch64,
