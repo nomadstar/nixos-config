@@ -76,19 +76,6 @@
               exec uvx --from camoufox-browser camoufox-browser "$@"
             '';
           };
-          camoufoxMcp = pkgs.writeShellApplication {
-            name = "camoufox-mcp";
-            runtimeInputs = [ pkgs.uv ];
-            text = ''
-              if [ -t 0 ]; then
-                echo "camoufox-mcp is a stdio MCP server, not an interactive command."
-                echo "Configure your MCP client to launch: camoufox-mcp"
-                exit 0
-              fi
-
-              exec uvx --from 'camoufox-browser[mcp]' camoufox-mcp "$@"
-            '';
-          };
           gpuPackages =
             if gpu == "amd" then
               (with pkgs; [ rocmPackages.rocminfo rocmPackages.rocm-smi ])
@@ -113,14 +100,12 @@
           # `codex`/`claude`/`agy` all live in the one instance.
           inputsFrom = extraShells;
           packages = with pkgs; [
-            python3
+            python311
             python3Packages.pip
             python3Packages.virtualenv
-            # `uv` provides `uvx`; these wrappers expose the maintained
-            # camoufox-browser CLI and its optional MCP server directly.
+            # `uv` provides `uvx` for the camoufox-browser wrapper below.
             uv
             camoufoxBrowser
-            camoufoxMcp
             claude-code.packages.${system}.default
             antigravity-nix.packages.${system}.google-antigravity-cli
             nodejs
@@ -141,6 +126,25 @@
             # http://127.0.0.1:8931/mcp.
             codex
           ]) ++ gpuPackages;
+          shellHook = ''
+            # camoufox-mcp is installed persistently with uv because it is
+            # not available in nixpkgs yet. Keep the package and MCP protocol
+            # versions isolated in their own XDG-backed tool/bin directories.
+            export CAMOUFOX_MCP_TOOL_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/tools/camoufox-mcp-0.1.0-mcp-1.26.0-camoufox-0.5.4"
+            export CAMOUFOX_MCP_BIN_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/bin/camoufox-mcp-0.1.0-mcp-1.26.0-camoufox-0.5.4"
+            export PATH="$CAMOUFOX_MCP_BIN_DIR:$PATH"
+
+            if [ ! -x "$CAMOUFOX_MCP_BIN_DIR/camoufox-mcp" ]; then
+              mkdir -p "$CAMOUFOX_MCP_BIN_DIR"
+              UV_TOOL_DIR="$CAMOUFOX_MCP_TOOL_DIR" \
+                UV_TOOL_BIN_DIR="$CAMOUFOX_MCP_BIN_DIR" \
+                uv tool install \
+                  --python ${pkgs.python311}/bin/python3.11 \
+                  --with 'mcp==1.26.0' \
+                  --with 'camoufox==0.5.4' \
+                  'camoufox-mcp==0.1.0'
+            fi
+          '';
         };
 
       # Built from source with its graph UI embedded (`make -f Makefile.cbm
@@ -246,6 +250,10 @@
       # Optional, on-demand tool sets: `nix develop .#<name>`. Nothing here
       # is installed into the system config - these are throwaway shells.
       devShells.${system} = rec {
+        # Keep the browser/Node toolchain as the default `nix develop`
+        # environment; named shells only add to it through inputsFrom.
+        default = browserAgent;
+
         # desktop's GPU: AMD Radeon RX 9060 XT (Navi 44), amdgpu driver -> ROCm.
         # extraShells = [ browserAgent camoufox ] fuses cvbrowser/playwright-mcp/curl
         # and camoufox (Firefox anti-detect engine + Qt GUI) into this same shell
@@ -609,12 +617,10 @@
               source "$venv/bin/activate"
               pip install --upgrade pip
               pip install "camoufox[gui,geoip]"
-              echo "    Descargando binario del navegador Camoufox..."
-              camoufox fetch || true
               echo ""
               echo "==> ¡Camoufox configurado con éxito!"
               echo "    - Para abrir el gestor gráfico: camoufox gui"
-              echo "    - Para actualizar el motor:      camoufox fetch"
+              echo "    - Para instalar/actualizar el motor manualmente: camoufox fetch"
               echo "    - Para usar en Python:           from camoufox.sync_api import Camoufox"
             fi
           '';
