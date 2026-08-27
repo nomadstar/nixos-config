@@ -123,6 +123,10 @@
             camoufoxMcp
             claude-code.packages.${system}.default
             antigravity-nix.packages.${system}.google-antigravity-cli
+            nodejs
+            yarn
+            bun
+            pnpm
           ] ++ (with pkgsUnstable; [
             # These ship new releases often enough that waiting for
             # them to land in nixos-25.11 means running months-old
@@ -291,6 +295,7 @@
               # Utilidades
               seclists jq ripgrep git curl pipx
               pythonWithScapyScrapy
+              nodejs yarn bun pnpm
             ];
             shellHook = ''
               # netexec (and possibly others here) exports its own PYTHONPATH
@@ -343,6 +348,7 @@
 
             # Audio / utilidades
             sox ffmpeg audacity pavucontrol
+            nodejs yarn bun pnpm
           ];
         };
 
@@ -385,6 +391,10 @@
             python3Packages.pip
             python3Packages.virtualenv
             python3Packages.jupyterlab
+            nodejs
+            yarn
+            bun
+            pnpm
           ] ++ (with pkgsUnfree; [
             cudaPackages.cudatoolkit
             cudaPackages.cuda_nvcc
@@ -444,7 +454,7 @@
           packages = [
             pkgsUnfree.vscode
             antigravity-nix.packages.${system}.google-antigravity-ide
-          ] ++ (with pkgs; [ gcc cmake ninja pkg-config nodejs pnpm yarn ]) ++ (with pkgs.rocmPackages; [
+          ] ++ (with pkgs; [ gcc cmake ninja pkg-config nodejs yarn bun pnpm ]) ++ (with pkgs.rocmPackages; [
             # Minimal HIP compile+run toolchain for desktop's AMD Radeon RX
             # 9060 XT (gfx1200) - `clr` is the HIP runtime/ROCclr (also
             # installs the HIP headers and its own patched clang toolchain
@@ -501,6 +511,10 @@
             python3Packages.virtualenv
             python3Packages.jinja2
             python3Packages.pyyaml
+            nodejs
+            yarn
+            bun
+            pnpm
           ];
         };
 
@@ -518,6 +532,10 @@
             python3Packages.virtualenv
             curl
             procps
+            nodejs
+            yarn
+            bun
+            pnpm
           ];
           shellHook = ''
             export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath (with pkgs; [
@@ -822,7 +840,15 @@
           in
           pkgs.mkShell {
             name = "browser-agent-devshell";
-            packages = [ cvbrowser pkgs.playwright-mcp pkgs.curl ];
+            packages = [
+              cvbrowser
+              pkgs.playwright-mcp
+              pkgs.curl
+              pkgs.nodejs
+              pkgs.yarn
+              pkgs.bun
+              pkgs.pnpm
+            ];
           };
       };
 

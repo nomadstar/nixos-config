@@ -162,6 +162,7 @@ in
     fastfetch
     bat
     gh
+    rustup
 
     # Basic monitoring
     htop
