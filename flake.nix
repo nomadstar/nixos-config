@@ -69,13 +69,6 @@
       # anything else (no dGPU, Intel-only, etc.) -> no GPU packages added.
       mkAiShell = { gpu ? "none", extraShells ? [ ] }:
         let
-          camoufoxBrowser = pkgs.writeShellApplication {
-            name = "camoufox-browser";
-            runtimeInputs = [ pkgs.uv ];
-            text = ''
-              exec uvx --from camoufox-browser camoufox-browser "$@"
-            '';
-          };
           gpuPackages =
             if gpu == "amd" then
               (with pkgs; [ rocmPackages.rocminfo rocmPackages.rocm-smi ])
@@ -103,9 +96,8 @@
             python311
             python3Packages.pip
             python3Packages.virtualenv
-            # `uv` provides `uvx` for the camoufox-browser wrapper below.
+            # `uv` manages Python tools like camoufox-browser/camoufox-mcp.
             uv
-            camoufoxBrowser
             claude-code.packages.${system}.default
             antigravity-nix.packages.${system}.google-antigravity-cli
             nodejs
@@ -127,22 +119,20 @@
             codex
           ]) ++ gpuPackages;
           shellHook = ''
-            # camoufox-mcp is installed persistently with uv because it is
-            # not available in nixpkgs yet. Keep the package and MCP protocol
+            # camoufox-browser (with MCP server) is installed persistently with uv
+            # because it is not available in nixpkgs yet. Keep the package and MCP protocol
             # versions isolated in their own XDG-backed tool/bin directories.
-            export CAMOUFOX_MCP_TOOL_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/tools/camoufox-mcp-0.1.0-mcp-1.26.0-camoufox-0.5.4"
-            export CAMOUFOX_MCP_BIN_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/bin/camoufox-mcp-0.1.0-mcp-1.26.0-camoufox-0.5.4"
-            export PATH="$CAMOUFOX_MCP_BIN_DIR:$PATH"
+            export CAMOUFOX_TOOL_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/tools/camoufox-browser-0.1.1"
+            export CAMOUFOX_BIN_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/bin/camoufox-browser-0.1.1"
+            export PATH="$CAMOUFOX_BIN_DIR:$PATH"
 
-            if [ ! -x "$CAMOUFOX_MCP_BIN_DIR/camoufox-mcp" ]; then
-              mkdir -p "$CAMOUFOX_MCP_BIN_DIR"
-              UV_TOOL_DIR="$CAMOUFOX_MCP_TOOL_DIR" \
-                UV_TOOL_BIN_DIR="$CAMOUFOX_MCP_BIN_DIR" \
+            if [ ! -x "$CAMOUFOX_BIN_DIR/camoufox-mcp" ] || [ ! -x "$CAMOUFOX_BIN_DIR/camoufox-browser" ]; then
+              mkdir -p "$CAMOUFOX_BIN_DIR"
+              UV_TOOL_DIR="$CAMOUFOX_TOOL_DIR" \
+                UV_TOOL_BIN_DIR="$CAMOUFOX_BIN_DIR" \
                 uv tool install \
                   --python ${pkgs.python311}/bin/python3.11 \
-                  --with 'mcp==1.26.0' \
-                  --with 'camoufox==0.5.4' \
-                  'camoufox-mcp==0.1.0'
+                  'camoufox-browser[mcp]==0.1.1'
             fi
           '';
         };
