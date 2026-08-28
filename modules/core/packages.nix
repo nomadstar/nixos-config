@@ -232,7 +232,10 @@ in
     # connecting out to other VNC servers.
     wayvnc
     tigervnc
-
+    # for watching videos
+    turbovnc
+    mpv
+    kdePackages.gwenview
     # Office suite (unfree, hence allowUnfree above)
     wpsoffice
 
@@ -256,6 +259,8 @@ in
     # "more correct per spec" but the original reporter's device still
     # hung with it, so it was never merged upstream. Confirmed fixed on
     # this Roku 2026-08-12: casting no longer drops at 30s.
+    
+
     (gnome-network-displays.overrideAttrs (old: {
       postPatch = (old.postPatch or "") + ''
         substituteInPlace src/wfd/wfd-client.c \
