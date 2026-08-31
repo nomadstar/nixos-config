@@ -46,9 +46,15 @@
       url = "github:DeusData/codebase-memory-mcp/v0.10.5";
       flake = false;
     };
+
+    # SONE: native Linux client for TIDAL (lossless, bit-perfect)
+    sone = {
+      url = "github:lullabyX/sone";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nvimConfig, sops-nix, claude-code, antigravity-nix, codebase-memory-mcp, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nvimConfig, sops-nix, claude-code, antigravity-nix, codebase-memory-mcp, sone, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
