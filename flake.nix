@@ -220,7 +220,7 @@
           version = (builtins.fromJSON (builtins.readFile "${sone}/src-tauri/tauri.conf.json")).version;
           src = sone;
           pnpm = pkgsUnstable.pnpm_11;
-          fetcherVersion = 3;
+          fetcherVersion = 4;
           hash = "sha256-wkdoXY9Lnz6kmB2liln1ee4jQ5Nm0zsL4TVQb183yPY=";
         };
       });
