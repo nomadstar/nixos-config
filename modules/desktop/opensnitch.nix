@@ -64,6 +64,19 @@
         data = "7236";
       };
     };
+    "permitir-kdeconnect" = {
+      name = "permitir-kdeconnect";
+      enabled = true;
+      action = "allow";
+      duration = "always";
+      created = "2026-08-31T20:00:00Z";
+      operator = {
+        type = "regexp";
+        sensitive = false;
+        operand = "dest.port";
+        data = "^(171[4-9]|17[2-5][0-9]|176[0-4])$";
+      };
+    };
   };
 
   environment.systemPackages = [ pkgs.opensnitch-ui ];

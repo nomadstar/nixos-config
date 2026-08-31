@@ -11,6 +11,7 @@
     ./matrix-cursors.nix
     ./wifi-panel.nix
     ./blueman.nix
+    ./kdeconnect.nix
     ./opensnitch.nix
     ./devshell-picker.nix
     ./qt-theme.nix
