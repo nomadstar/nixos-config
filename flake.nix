@@ -1,174 +1,106 @@
 {
   description = "nanixtus reproducible NixOS configuration";
 
+  # ============================================================================
+  # 1. INPUTS
+  # ============================================================================
   inputs = {
+    # Base system nixpkgs (stable 25.11)
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
 
     # Rolling/bleeding-edge nixpkgs, kept separate from the stable `nixpkgs`
     # above. The base system stays on 25.11 for reliability; `pkgsUnstable`
-    # (below) is for opting individual fast-moving packages into newer
-    # versions instead - see the ai devShell's opencode/ollama for the
-    # pattern. Not `nixpkgs.follows`-ed to anything, on purpose: it's meant
-    # to actually drift from the pinned stable revision.
+    # is for opting individual fast-moving packages into newer versions instead
+    # (see opencode, ollama, codex, yt-dlp, etc.). Not `nixpkgs.follows`-ed to
+    # anything, on purpose: it's meant to drift from the pinned stable revision.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
+    # User environment manager
     home-manager.url = "github:nix-community/home-manager/release-25.11";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    # Personal Neovim (NvChad-based) config, also linked in as the nvim/ git
-    # submodule for `git clone --recurse-submodules`. Fetched here as its
-    # own flake input so Nix evaluation doesn't depend on the parent repo's
-    # git index carrying submodule content (it doesn't).
+    # Secret management with age / sops
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    # Personal Neovim (NvChad-based) config, linked as submodule in nvim/
+    # Fetched as its own input so Nix evaluation doesn't depend on the parent
+    # repo's git index carrying submodule content.
     nvimConfig = {
       url = "github:nomadstar/starter";
       flake = false;
     };
 
-    sops-nix.url = "github:Mic92/sops-nix";
-    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
-
     # Claude Code CLI, for the ai devShell. Not in nixpkgs.
     claude-code.url = "github:ryoppippi/nix-claude-code";
 
-    # Google Antigravity IDE + `agy` CLI, for the ai/developer devShells. Not
-    # in nixpkgs; this flake pins its own nixpkgs with allowUnfree already set.
+    # Google Antigravity IDE + `agy` CLI, for the ai/developer devShells.
+    # Pinned with allowUnfree already configured in its own flake.
     antigravity-nix.url = "github:jacopone/antigravity-nix";
 
-    # codebase-memory-mcp: MCP code-intelligence server (see the
-    # codebaseMemoryMcp derivation below, modules/core/codebase-memory-mcp.nix,
-    # and the repo-root .mcp.json for the opt-in Claude Code wiring). Not in
-    # nixpkgs; pinned to a release tag rather than `main` so `nix flake
-    # update` doesn't silently pick up unreleased commits. `flake = false` -
-    # only the source tree is used (see codebaseMemoryMcp below), not
-    # upstream's own flake.nix/packages output (that only builds the no-UI
-    # variant).
+    # codebase-memory-mcp: MCP code-intelligence server (see codebaseMemoryMcp
+    # below, modules/core/codebase-memory-mcp.nix, and repo-root .mcp.json).
+    # Pinned to a release tag. `flake = false` to build from source with UI.
     codebase-memory-mcp = {
       url = "github:DeusData/codebase-memory-mcp/v0.10.5";
       flake = false;
     };
 
-    # SONE: native Linux client for TIDAL (lossless, bit-perfect)
+    # SONE: native Linux client for TIDAL (lossless, bit-perfect streaming).
     sone = {
       url = "github:lullabyX/sone";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nvimConfig, sops-nix, claude-code, antigravity-nix, codebase-memory-mcp, sone, ... }:
+  # ============================================================================
+  # 2. OUTPUTS
+  # ============================================================================
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixpkgs-unstable,
+      home-manager,
+      nvimConfig,
+      sops-nix,
+      claude-code,
+      antigravity-nix,
+      codebase-memory-mcp,
+      sone,
+      ...
+    }:
     let
       system = "x86_64-linux";
+
+      # Base nixpkgs set (stable 25.11, unfree-free by default)
       pkgs = nixpkgs.legacyPackages.${system};
 
-      # CUDA packages are unfree; only the pkgs instance used to build the
-      # nvidia devShell variant allows it. The system-wide `pkgs` above (and
-      # therefore nixosConfigurations) stays unfree-free unless you decide
-      # otherwise for the whole system.
-      pkgsUnfree = import nixpkgs { inherit system; config.allowUnfree = true; };
+      # Opt-in unfree package set (for CUDA, VSCode, etc.)
+      pkgsUnfree = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
 
-      # Deliberately bleeding-edge, for individual packages that are worth
-      # tracking closely (see "Package freshness" in the README). Nothing
-      # is pulled from here by default - it's opt-in per package, per
-      # devShell/module, same spirit as pkgsUnfree above.
+      # Deliberately bleeding-edge package set for fast-moving tools
       pkgsUnstable = nixpkgs-unstable.legacyPackages.${system};
 
-      # GPU policy for the ai devShell, per host: NVIDIA -> CUDA, AMD -> ROCm,
-      # anything else (no dGPU, Intel-only, etc.) -> no GPU packages added.
-      mkAiShell = { gpu ? "none", extraShells ? [ ] }:
-        let
-          gpuPackages =
-            if gpu == "amd" then
-              (with pkgs; [ rocmPackages.rocminfo rocmPackages.rocm-smi ])
-            else if gpu == "nvidia" then
-              (with pkgsUnfree; [ cudaPackages.cudatoolkit cudaPackages.cuda_nvcc ])
-            else
-              [ ];
-        in
-        pkgs.mkShell {
-          name = "ai-devshell";
-          # Pulls in extraShells' packages + shellHook (mkShell concatenates
-          # every inputsFrom entry) - same pattern `developer` below uses for
-          # rapids. Called with `extraShells = [ browserAgent ]` (see the
-          # devShells block), so cvbrowser/playwright-mcp/curl land in this
-          # same shell instance instead of a separate `nix develop
-          # .#browserAgent`. That separation was the actual cause of past
-          # Codex errors: Codex's MCP client (~/.codex/config.toml ->
-          # 127.0.0.1:8931/mcp) would try to connect from inside the `ai`
-          # shell while `cvbrowser start` had only ever been run - or was
-          # possible to run - from the other, separate `browserAgent` shell.
-          # With both shells' packages merged here, `cvbrowser start` and
-          # `codex`/`claude`/`agy` all live in the one instance.
-          inputsFrom = extraShells;
-          packages = with pkgs; [
-            python311
-            python3Packages.pip
-            python3Packages.virtualenv
-            # `uv` manages Python tools like camoufox-browser/camoufox-mcp.
-            uv
-            claude-code.packages.${system}.default
-            antigravity-nix.packages.${system}.google-antigravity-cli
-            nodejs
-            yarn
-            bun
-            pnpm
-          ] ++ (with pkgsUnstable; [
-            # These ship new releases often enough that waiting for
-            # them to land in nixos-25.11 means running months-old
-            # versions - pulled from pkgsUnstable instead of pkgs on
-            # purpose. Everything else in this shell stays on stable.
-            ollama
-            opencode
-            # OpenAI's Codex CLI - the third agent (alongside Claude Code
-            # and agy/Antigravity above) wired to the shared browserAgent
-            # MCP server's config (see that devShell's comment block);
-            # ~/.codex/config.toml already points it at
-            # http://127.0.0.1:8931/mcp.
-            codex
-          ]) ++ gpuPackages;
-          shellHook = ''
-            # camoufox-browser (with MCP server) is installed persistently with uv
-            # because it is not available in nixpkgs yet. Keep the package and MCP protocol
-            # versions isolated in their own XDG-backed tool/bin directories.
-            export CAMOUFOX_TOOL_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/tools/camoufox-browser-0.1.1"
-            export CAMOUFOX_BIN_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/bin/camoufox-browser-0.1.1"
-            export PATH="$CAMOUFOX_BIN_DIR:$PATH"
+      # ------------------------------------------------------------------------
+      # Custom Packages & Derivations
+      # ------------------------------------------------------------------------
 
-            if [ ! -x "$CAMOUFOX_BIN_DIR/camoufox-mcp" ] || [ ! -x "$CAMOUFOX_BIN_DIR/camoufox-browser" ]; then
-              mkdir -p "$CAMOUFOX_BIN_DIR"
-              UV_TOOL_DIR="$CAMOUFOX_TOOL_DIR" \
-                UV_TOOL_BIN_DIR="$CAMOUFOX_BIN_DIR" \
-                uv tool install \
-                  --python ${pkgs.python311}/bin/python3.11 \
-                  'camoufox-browser[mcp]==0.1.1'
-            fi
-          '';
-        };
-
-      # Built from source with its graph UI embedded (`make -f Makefile.cbm
-      # cbm-with-ui`) - upstream's own flake.nix only builds the no-UI
-      # variant (`cbm`), and the UI-enabled binary is a strict superset
-      # (identical CLI/MCP behavior; the UI just doesn't start unless
-      # `--ui=true` is passed), so there's no reason to build both.
-      #
-      # `cbm-with-ui`'s prerequisites - the `frontend` (`cd graph-ui && npm
-      # ci && npm run build`) and `embed` Makefile targets - are both
-      # unconditional .PHONY, so a plain `make cbm-with-ui` always reruns
-      # `npm ci` itself, which needs network access Nix's sandboxed build
-      # doesn't have. Worked around by doing that step ourselves first -
-      # `fetchNpmDeps`/`npmConfigHook` prefetch graph-ui's npm deps as a
-      # fixed-output derivation so `npm ci` can run fully offline - then
-      # telling Make those two targets are already satisfied (`-o frontend
-      # -o embed`) so it goes straight to the final C link using what's
-      # already on disk.
-      #
-      # Handed to modules/core/codebase-memory-mcp.nix via specialArgs
-      # below - modules don't have lexical access to this `let` block, only
-      # to whatever's threaded through explicitly, same as pkgsUnstable.
+      # codebase-memory-mcp: built from source with graph UI embedded
+      # (`make -f Makefile.cbm cbm-with-ui`).
       codebaseMemoryMcp = pkgs.stdenv.mkDerivation {
         pname = "codebase-memory-mcp";
         version = "0.10.5";
         src = codebase-memory-mcp;
 
-        nativeBuildInputs = [ pkgs.gnumake pkgs.nodejs pkgs.npmHooks.npmConfigHook ];
+        nativeBuildInputs = [
+          pkgs.gnumake
+          pkgs.nodejs
+          pkgs.npmHooks.npmConfigHook
+        ];
         buildInputs = [ pkgs.zlib ];
 
         npmRoot = "graph-ui";
@@ -184,9 +116,7 @@
           ( cd graph-ui
             npm ci
             # npm's own .bin shims use `#!/usr/bin/env node`, which doesn't
-            # resolve on NixOS (/usr/bin/env doesn't exist) - same category
-            # of problem upstream's flake.nix already works around for the
-            # C compiler check in scripts/build.sh.
+            # resolve on NixOS (/usr/bin/env doesn't exist)
             patchShebangs node_modules
             npm run build
           )
@@ -224,43 +154,271 @@
           hash = "sha256-wkdoXY9Lnz6kmB2liln1ee4jQ5Nm0zsL4TVQb183yPY=";
         };
       });
+
+      # cvbrowser: Shared browser-automation endpoint for AI coding agents
+      # (Claude Code, Antigravity/agy, Codex) driving Playwright Firefox via MCP HTTP.
+      cvbrowser = pkgs.writeShellApplication {
+        name = "cvbrowser";
+        runtimeInputs = [
+          pkgs.playwright-mcp
+          pkgs.procps
+          pkgs.curl
+        ];
+        text = ''
+          RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/tmp}/cvbrowser"
+          DATA_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/cvbrowser"
+          PROFILE_DIR="''${CVBROWSER_PROFILE_DIR:-$DATA_DIR/firefox-profile-playwright}"
+          PIDFILE="$RUNTIME_DIR/mcp.pid"
+          LOGFILE="$RUNTIME_DIR/mcp.log"
+          HOST=127.0.0.1
+          PORT=8931
+
+          mkdir -p "$RUNTIME_DIR" "$DATA_DIR" "$PROFILE_DIR"
+          chmod 700 "$RUNTIME_DIR" "$DATA_DIR" "$PROFILE_DIR"
+          export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+          # nixpkgs' mcp-server-playwright wrapper does
+          # `export PLAYWRIGHT_MCP_BROWSER=''${PLAYWRIGHT_MCP_BROWSER-'chromium'}`
+          # unconditionally, and the underlying server reads that env
+          # var to pick the browser - setting it here selects Firefox.
+          export PLAYWRIGHT_MCP_BROWSER=firefox
+
+          is_running() {
+            [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
+          }
+
+          challenge_protocol() {
+            echo "CHALLENGE PROTOCOL: if a Cloudflare Turnstile / CAPTCHA / \"verify you are human\" wall appears (an iframe from challenges.cloudflare.com is the usual tell - seen on Indeed and Fiverr, not LinkedIn) - STOP."
+            echo "Do not retry the action and do not try to click/solve it yourself. Tell the user and wait: this browser is headed, so they solve it directly in the visible window; resume only once they confirm it's done."
+          }
+
+          cmd="status"
+          if [ "$#" -gt 0 ]; then
+            cmd="$1"
+            shift
+          fi
+
+          case "$cmd" in
+            start)
+              if is_running; then
+                echo "already running (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp"
+                exit 0
+              fi
+              if curl --silent --output /dev/null --connect-timeout 0.2 "http://$HOST:$PORT/mcp"; then
+                echo "cannot start: $HOST:$PORT is already served by another process" >&2
+                echo "stop that process before running cvbrowser start" >&2
+                exit 1
+              fi
+              extra_args=()
+              if [ "''${CVBROWSER_HEADLESS:-0}" = "1" ]; then
+                extra_args+=(--headless)
+              fi
+              if [ "''${CVBROWSER_ISOLATED:-0}" = "1" ]; then
+                extra_args+=(--isolated)
+                profile_description="ephemeral in-memory profile"
+              else
+                extra_args+=(--user-data-dir "$PROFILE_DIR")
+                profile_description="dedicated profile: $PROFILE_DIR"
+              fi
+              extra_args+=("$@")
+              nohup mcp-server-playwright --browser firefox --host "$HOST" --port "$PORT" "''${extra_args[@]}" \
+                < /dev/null \
+                > "$LOGFILE" 2>&1 &
+              echo $! > "$PIDFILE"
+              ready=0
+              for _ in $(seq 1 50); do
+                if ! is_running; then
+                  break
+                fi
+                if curl --silent --output /dev/null "http://$HOST:$PORT/mcp" && is_running; then
+                  ready=1
+                  break
+                fi
+                sleep 0.1
+              done
+              if [ "$ready" = "1" ]; then
+                echo "started (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp  (legacy SSE: http://$HOST:$PORT/sse)"
+                echo "$profile_description"
+                challenge_protocol
+              else
+                echo "failed to start - see $LOGFILE" >&2
+                rm -f "$PIDFILE"
+                exit 1
+              fi
+              ;;
+            stop)
+              if is_running; then
+                kill -TERM "$(cat "$PIDFILE")"
+                echo "sent SIGTERM to $(cat "$PIDFILE")"
+              else
+                echo "not running"
+              fi
+              rm -f "$PIDFILE"
+              ;;
+            kill)
+              if is_running; then
+                pid="$(cat "$PIDFILE")"
+                pkill -KILL -P "$pid" 2>/dev/null || true
+                kill -KILL "$pid" 2>/dev/null || true
+                echo "killed $pid and its children"
+              else
+                echo "not running"
+              fi
+              rm -f "$PIDFILE"
+              ;;
+            status)
+              if is_running; then
+                echo "running (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp"
+              else
+                echo "not running"
+              fi
+              ;;
+            logs)
+              tail -n 50 -f "$LOGFILE"
+              ;;
+            login)
+              if is_running; then
+                echo "stop cvbrowser before opening its profile for manual login" >&2
+                exit 1
+              fi
+              firefox_bins=("$PLAYWRIGHT_BROWSERS_PATH"/firefox-*/firefox/firefox)
+              if [ "''${#firefox_bins[@]}" -ne 1 ] || [ ! -x "''${firefox_bins[0]}" ]; then
+                echo "cannot locate the Playwright-pinned Firefox executable" >&2
+                exit 1
+              fi
+              echo "opening dedicated profile for manual login: $PROFILE_DIR"
+              echo "close Firefox completely before running cvbrowser start"
+              exec "''${firefox_bins[0]}" --no-remote --profile "$PROFILE_DIR"
+              ;;
+            profile)
+              echo "$PROFILE_DIR"
+              ;;
+            protocol)
+              challenge_protocol
+              ;;
+            *)
+              echo "usage: cvbrowser {start|stop|kill|status|logs|login|profile|protocol}" >&2
+              exit 1
+              ;;
+          esac
+        '';
+      };
+
+      # ------------------------------------------------------------------------
+      # Development Shell Builders
+      # ------------------------------------------------------------------------
+
+      # GPU policy for AI devShell: AMD -> ROCm, NVIDIA -> CUDA, none -> CPU only
+      mkAiShell =
+        {
+          gpu ? "none",
+          extraShells ? [ ],
+        }:
+        let
+          gpuPackages =
+            if gpu == "amd" then
+              (with pkgs; [
+                rocmPackages.rocminfo
+                rocmPackages.rocm-smi
+              ])
+            else if gpu == "nvidia" then
+              (with pkgsUnfree; [
+                cudaPackages.cudatoolkit
+                cudaPackages.cuda_nvcc
+              ])
+            else
+              [ ];
+        in
+        pkgs.mkShell {
+          name = "ai-devshell";
+          inputsFrom = extraShells;
+          packages =
+            (with pkgs; [
+              python311
+              python3Packages.pip
+              python3Packages.virtualenv
+              uv
+              claude-code.packages.${system}.default
+              antigravity-nix.packages.${system}.google-antigravity-cli
+              nodejs
+              yarn
+              bun
+              pnpm
+            ])
+            ++ (with pkgsUnstable; [
+              ollama
+              opencode
+              codex
+            ])
+            ++ gpuPackages;
+
+          shellHook = ''
+            export CAMOUFOX_TOOL_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/tools/camoufox-browser-0.1.1"
+            export CAMOUFOX_BIN_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/bin/camoufox-browser-0.1.1"
+            export PATH="$CAMOUFOX_BIN_DIR:$PATH"
+
+            if [ ! -x "$CAMOUFOX_BIN_DIR/camoufox-mcp" ] || [ ! -x "$CAMOUFOX_BIN_DIR/camoufox-browser" ]; then
+              mkdir -p "$CAMOUFOX_BIN_DIR"
+              UV_TOOL_DIR="$CAMOUFOX_TOOL_DIR" \
+                UV_TOOL_BIN_DIR="$CAMOUFOX_BIN_DIR" \
+                uv tool install \
+                  --python ${pkgs.python311}/bin/python3.11 \
+                  'camoufox-browser[mcp]==0.1.1'
+            fi
+          '';
+        };
     in
     {
+      # ========================================================================
+      # 3. STANDALONE PACKAGES
+      # ========================================================================
       packages.${system} = {
         sone = sonePkg;
         default = sonePkg;
       };
 
-      nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit pkgsUnstable codebaseMemoryMcp; sone = sonePkg; };
-        modules = [
-          ./hosts/desktop/default.nix
-          sops-nix.nixosModules.sops
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit nvimConfig; };
-            home-manager.users.nanixtus = import ./hosts/desktop/home.nix;
-          }
-        ];
-      };
+      # ========================================================================
+      # 4. NIXOS SYSTEM CONFIGURATIONS
+      # ========================================================================
+      nixosConfigurations = {
+        # Desktop (AMD Ryzen / AMD Radeon RX 9060 XT)
+        desktop = nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            inherit pkgsUnstable codebaseMemoryMcp;
+            sone = sonePkg;
+          };
+          modules = [
+            ./hosts/desktop/default.nix
+            sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.extraSpecialArgs = { inherit nvimConfig; };
+              home-manager.users.nanixtus = import ./hosts/desktop/home.nix;
+            }
+          ];
+        };
 
-      nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit pkgsUnstable codebaseMemoryMcp; sone = sonePkg; };
-        modules = [
-          ./hosts/laptop/default.nix
-          sops-nix.nixosModules.sops
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit nvimConfig; };
-            home-manager.users.nanixtus = import ./hosts/laptop/home.nix;
-          }
-        ];
+        # Laptop (Intel / NVIDIA GeForce RTX 2050 Prime)
+        laptop = nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            inherit pkgsUnstable codebaseMemoryMcp;
+            sone = sonePkg;
+          };
+          modules = [
+            ./hosts/laptop/default.nix
+            sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.extraSpecialArgs = { inherit nvimConfig; };
+              home-manager.users.nanixtus = import ./hosts/laptop/home.nix;
+            }
+          ];
+        };
       };
 
       # Optional, on-demand tool sets: `nix develop .#<name>`. Nothing here
@@ -699,192 +857,33 @@
         # `nix develop .#browserAgent` shell needed for normal use. Kept as
         # its own standalone attribute too (same reasoning as `rapids`
         # staying separate from `developer`): a lighter shell for headless/
-        # CI-style browser-only use, or for driving the browser from a
-        # terminal that isn't running any AI agent at all.
-        browserAgent =
-          let
-            cvbrowser = pkgs.writeShellApplication {
-              name = "cvbrowser";
-              runtimeInputs = [ pkgs.playwright-mcp pkgs.procps pkgs.curl ];
-              text = ''
-                RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/tmp}/cvbrowser"
-                DATA_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/cvbrowser"
-                PROFILE_DIR="''${CVBROWSER_PROFILE_DIR:-$DATA_DIR/firefox-profile-playwright}"
-                PIDFILE="$RUNTIME_DIR/mcp.pid"
-                LOGFILE="$RUNTIME_DIR/mcp.log"
-                HOST=127.0.0.1
-                PORT=8931
-
-                mkdir -p "$RUNTIME_DIR" "$DATA_DIR" "$PROFILE_DIR"
-                chmod 700 "$RUNTIME_DIR" "$DATA_DIR" "$PROFILE_DIR"
-                export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
-                # nixpkgs' mcp-server-playwright wrapper does
-                # `export PLAYWRIGHT_MCP_BROWSER=''${PLAYWRIGHT_MCP_BROWSER-'chromium'}`
-                # unconditionally, and the underlying server reads that env
-                # var to pick the browser - it wins over `--browser firefox`
-                # below, not the other way around (confirmed empirically:
-                # with the env var merely unset, the wrapper still defaulted
-                # it to chromium and that's what actually launched). Setting
-                # it here is what actually selects Firefox; --browser is
-                # kept for clarity/redundancy in case that ever changes.
-                export PLAYWRIGHT_MCP_BROWSER=firefox
-
-                is_running() {
-                  [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
-                }
-
-                # Indeed/Fiverr front their apply/gig flows with Cloudflare
-                # Turnstile; LinkedIn's own detection doesn't seem to trigger
-                # it for an authenticated, headed, human-paced session (see
-                # cvbrowser's own doc comment above for why). The only sound
-                # response to a challenge is a real human solving it - not a
-                # stealth patch - so this is printed for whichever agent
-                # (Claude Code/Codex/agy) is driving the MCP session, telling
-                # it to stop and hand off instead of retrying or guessing.
-                challenge_protocol() {
-                  echo "CHALLENGE PROTOCOL: if a Cloudflare Turnstile / CAPTCHA / \"verify you are human\" wall appears (an iframe from challenges.cloudflare.com is the usual tell - seen on Indeed and Fiverr, not LinkedIn) - STOP."
-                  echo "Do not retry the action and do not try to click/solve it yourself. Tell the user and wait: this browser is headed, so they solve it directly in the visible window; resume only once they confirm it's done."
-                }
-
-                cmd="status"
-                if [ "$#" -gt 0 ]; then
-                  cmd="$1"
-                  shift
-                fi
-
-                case "$cmd" in
-                  start)
-                    if is_running; then
-                      echo "already running (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp"
-                      exit 0
-                    fi
-                    if curl --silent --output /dev/null --connect-timeout 0.2 "http://$HOST:$PORT/mcp"; then
-                      echo "cannot start: $HOST:$PORT is already served by another process" >&2
-                      echo "stop that process before running cvbrowser start" >&2
-                      exit 1
-                    fi
-                    extra_args=()
-                    if [ "''${CVBROWSER_HEADLESS:-0}" = "1" ]; then
-                      extra_args+=(--headless)
-                    fi
-                    if [ "''${CVBROWSER_ISOLATED:-0}" = "1" ]; then
-                      extra_args+=(--isolated)
-                      profile_description="ephemeral in-memory profile"
-                    else
-                      extra_args+=(--user-data-dir "$PROFILE_DIR")
-                      profile_description="dedicated profile: $PROFILE_DIR"
-                    fi
-                    extra_args+=("$@")
-                    nohup mcp-server-playwright --browser firefox --host "$HOST" --port "$PORT" "''${extra_args[@]}" \
-                      < /dev/null \
-                      > "$LOGFILE" 2>&1 &
-                    echo $! > "$PIDFILE"
-                    ready=0
-                    for _ in $(seq 1 50); do
-                      if ! is_running; then
-                        break
-                      fi
-                      # A bare GET returns 400 once the MCP HTTP transport is
-                      # listening; curl only needs to establish the connection.
-                      if curl --silent --output /dev/null "http://$HOST:$PORT/mcp" && is_running; then
-                        ready=1
-                        break
-                      fi
-                      sleep 0.1
-                    done
-                    if [ "$ready" = "1" ]; then
-                      echo "started (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp  (legacy SSE: http://$HOST:$PORT/sse)"
-                      echo "$profile_description"
-                      challenge_protocol
-                    else
-                      echo "failed to start - see $LOGFILE" >&2
-                      rm -f "$PIDFILE"
-                      exit 1
-                    fi
-                    ;;
-                  stop)
-                    if is_running; then
-                      kill -TERM "$(cat "$PIDFILE")"
-                      echo "sent SIGTERM to $(cat "$PIDFILE")"
-                    else
-                      echo "not running"
-                    fi
-                    rm -f "$PIDFILE"
-                    ;;
-                  kill)
-                    if is_running; then
-                      pid="$(cat "$PIDFILE")"
-                      pkill -KILL -P "$pid" 2>/dev/null || true
-                      kill -KILL "$pid" 2>/dev/null || true
-                      echo "killed $pid and its children"
-                    else
-                      echo "not running"
-                    fi
-                    rm -f "$PIDFILE"
-                    ;;
-                  status)
-                    if is_running; then
-                      echo "running (pid $(cat "$PIDFILE")): http://$HOST:$PORT/mcp"
-                    else
-                      echo "not running"
-                    fi
-                    ;;
-                  logs)
-                    tail -n 50 -f "$LOGFILE"
-                    ;;
-                  login)
-                    if is_running; then
-                      echo "stop cvbrowser before opening its profile for manual login" >&2
-                      exit 1
-                    fi
-                    firefox_bins=("$PLAYWRIGHT_BROWSERS_PATH"/firefox-*/firefox/firefox)
-                    if [ "''${#firefox_bins[@]}" -ne 1 ] || [ ! -x "''${firefox_bins[0]}" ]; then
-                      echo "cannot locate the Playwright-pinned Firefox executable" >&2
-                      exit 1
-                    fi
-                    echo "opening dedicated profile for manual login: $PROFILE_DIR"
-                    echo "close Firefox completely before running cvbrowser start"
-                    exec "''${firefox_bins[0]}" --no-remote --profile "$PROFILE_DIR"
-                    ;;
-                  profile)
-                    echo "$PROFILE_DIR"
-                    ;;
-                  protocol)
-                    challenge_protocol
-                    ;;
-                  *)
-                    echo "usage: cvbrowser {start|stop|kill|status|logs|login|profile|protocol}" >&2
-                    exit 1
-                    ;;
-                esac
-              '';
-            };
-          in
-          pkgs.mkShell {
-            name = "browser-agent-devshell";
-            packages = [
-              cvbrowser
-              pkgs.playwright-mcp
-              pkgs.curl
-              pkgs.nodejs
-              pkgs.yarn
-              pkgs.bun
-              pkgs.pnpm
-            ];
-          };
+        browserAgent = pkgs.mkShell {
+          name = "browser-agent-devshell";
+          packages = [
+            cvbrowser
+            pkgs.playwright-mcp
+            pkgs.curl
+            pkgs.nodejs
+            pkgs.yarn
+            pkgs.bun
+            pkgs.pnpm
+          ];
+        };
       };
 
-      # `nix flake check` (full, not --no-build) builds and runs this -
-      # regression coverage for classify_gpus()'s topology rules (see
-      # modules/hardware/gpu-classify.sh) using simulated vendor lists, no
-      # test framework, no real hardware involved.
-      checks.${system}.gpu-classify = pkgs.runCommand "gpu-classify-tests" { } ''
-        ${pkgs.writeShellApplication {
-          name = "detect-gpu-selftest";
-          text = builtins.readFile ./modules/hardware/gpu-classify.sh
-            + "\n" + builtins.readFile ./modules/hardware/gpu-classify-test.sh;
-        }}/bin/detect-gpu-selftest
-        touch $out
-      '';
+      # ========================================================================
+      # 6. CHECKS & TESTS (`nix flake check`)
+      # ========================================================================
+      checks.${system}.gpu-classify =
+        pkgs.runCommand "gpu-classify-tests" { } ''
+          ${pkgs.writeShellApplication {
+            name = "detect-gpu-selftest";
+            text =
+              builtins.readFile ./modules/hardware/gpu-classify.sh
+              + "\n"
+              + builtins.readFile ./modules/hardware/gpu-classify-test.sh;
+          }}/bin/detect-gpu-selftest
+          touch $out
+        '';
     };
 }
