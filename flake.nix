@@ -209,11 +209,31 @@
           platforms = [ "x86_64-linux" ];
         };
       };
+
+      # SONE: native Linux client for TIDAL (lossless, bit-perfect).
+      # Built from source with nixpkgs-unstable (for pnpm_11 / cargo-tauri /
+      # webkitgtk_4_1). Upstream package.nix has a stale pnpmDeps hash in
+      # the latest commit, overridden here with the valid fixed-output hash.
+      sonePkg = (pkgsUnstable.callPackage "${sone}/nix/package.nix" { src = sone; }).overrideAttrs (_old: {
+        pnpmDeps = pkgsUnstable.fetchPnpmDeps {
+          pname = "sone";
+          version = (builtins.fromJSON (builtins.readFile "${sone}/src-tauri/tauri.conf.json")).version;
+          src = sone;
+          pnpm = pkgsUnstable.pnpm_11;
+          fetcherVersion = 3;
+          hash = "sha256-wkdoXY9Lnz6kmB2liln1ee4jQ5Nm0zsL4TVQb183yPY=";
+        };
+      });
     in
     {
+      packages.${system} = {
+        sone = sonePkg;
+        default = sonePkg;
+      };
+
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit pkgsUnstable codebaseMemoryMcp; };
+        specialArgs = { inherit pkgsUnstable codebaseMemoryMcp; sone = sonePkg; };
         modules = [
           ./hosts/desktop/default.nix
           sops-nix.nixosModules.sops
@@ -229,7 +249,7 @@
 
       nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit pkgsUnstable codebaseMemoryMcp; };
+        specialArgs = { inherit pkgsUnstable codebaseMemoryMcp; sone = sonePkg; };
         modules = [
           ./hosts/laptop/default.nix
           sops-nix.nixosModules.sops

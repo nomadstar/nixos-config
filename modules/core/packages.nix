@@ -1,4 +1,4 @@
-{ config, lib, pkgs, pkgsUnstable, ... }:
+{ config, lib, pkgs, pkgsUnstable, sone, ... }:
 
 let
   # curl-cffi 0.15.0's test suite (test_verify, in particular) asserts on an
@@ -198,6 +198,9 @@ in
 
     # Audio control (PipeWire/Wireplumber native GUI)
     pwvucontrol
+
+    # Native Linux client for TIDAL (lossless, bit-perfect streaming)
+    sone
 
     # Chat - both clients installed on purpose (same account, pick per use)
     discord

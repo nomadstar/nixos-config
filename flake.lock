@@ -182,7 +182,24 @@
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nvimConfig": "nvimConfig",
+        "sone": "sone",
         "sops-nix": "sops-nix"
+      }
+    },
+    "sone": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788130563,
+        "narHash": "sha256-cAb0/+C/xk+bJzOY3XzwKKKrpOWVH7WxIY8qSpl0pPQ=",
+        "owner": "lullabyX",
+        "repo": "sone",
+        "rev": "2184ba9caf75cf8677d5526d37b937d1b40f43c1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lullabyX",
+        "repo": "sone",
+        "type": "github"
       }
     },
     "sops-nix": {
