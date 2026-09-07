@@ -51,6 +51,11 @@
       url = "github:lullabyX/sone";
       flake = false;
     };
+
+    # Reproducible ComfyUI runtime. Keep its nixpkgs pin independent: the
+    # upstream flake packages ComfyUI together with matching PyTorch/ROCm
+    # wheels, which can move faster than this system's stable nixpkgs.
+    comfyui-nix.url = "github:utensils/comfyui-nix";
   };
 
   # ============================================================================
@@ -68,6 +73,7 @@
       antigravity-nix,
       codebase-memory-mcp,
       sone,
+      comfyui-nix,
       ...
     }:
     let
@@ -439,6 +445,17 @@
 
         # laptop's GPU: NVIDIA GeForce RTX 2050 (Ampere, GA107) -> CUDA.
         ai-laptop = mkAiShell { gpu = "nvidia"; extraShells = [ browserAgent camoufox ]; };
+
+        # ComfyUI with ROCm acceleration for the desktop's AMD Radeon GPU.
+        # Runtime data (models, custom nodes, inputs, and outputs) remains
+        # writable outside the Nix store under ~/.config/comfy-ui.
+        comfyui = pkgs.mkShell {
+          name = "comfyui-rocm-shell";
+          packages = [ comfyui-nix.packages.${system}.rocm ];
+          shellHook = ''
+            echo "ComfyUI ROCm shell ready; run: comfy-ui --open"
+          '';
+        };
 
         pentest =
           let
