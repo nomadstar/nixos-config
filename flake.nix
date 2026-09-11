@@ -157,7 +157,7 @@
           src = sone;
           pnpm = pkgsUnstable.pnpm_11;
           fetcherVersion = 4;
-          hash = "sha256-hT9CJTGRoDPV5BAlXTfR3wO4QNpq3Pag6Fvqag29w5c=";
+          hash = "sha256-Yu1FBJv3jeHFBHX4StEe4UWGqPID7zTuvOpHjAye6hY=";
         };
       });
 
