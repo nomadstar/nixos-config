@@ -23,49 +23,6 @@ let
     dependencies = map (d: if (d.pname or null) == "curl-cffi" then fixedCurlCffi else d) old.dependencies;
   });
 
-  # Official Grass Desktop Node (https://app.getgrass.io/)
-  # Packaged in an FHS environment with WebKitGTK/GTK3/libsoup
-  # to run seamlessly on NixOS with desktop integration and icons.
-  grassDeb = pkgs.fetchurl {
-    url = "https://files.getgrass.io/file/grass-extension-upgrades/v7.6.0/grass-desktop_7.6.0_amd64.deb";
-    sha256 = "aa8fec75036be20662a8ea7a7d4c1d7fbe6b61954cdd9e4b7aa8029a54ec0c10";
-  };
-  grassUnpacked = pkgs.stdenv.mkDerivation {
-    name = "grass-unpacked";
-    src = grassDeb;
-    nativeBuildInputs = [ pkgs.dpkg ];
-    dontUnpack = true;
-    installPhase = ''
-      mkdir -p $out
-      dpkg-deb -x $src $out
-    '';
-  };
-  grassDesktop = pkgs.buildFHSEnv {
-    name = "grass-desktop";
-    targetPkgs = pkgs: (with pkgs; [
-      gtk3
-      cairo
-      gdk-pixbuf
-      glib
-      webkitgtk_4_1
-      libayatana-appindicator
-      libsoup_3
-      openssl
-      zlib
-      dbus
-    ]);
-    runScript = "${grassUnpacked}/usr/bin/grass-desktop";
-    extraInstallCommands = ''
-      mkdir -p $out/share
-      cp -r ${grassUnpacked}/usr/share/* $out/share/
-    '';
-    meta = with lib; {
-      description = "Grass Desktop Node - earn rewards by sharing unused network bandwidth";
-      homepage = "https://app.getgrass.io/";
-      platforms = [ "x86_64-linux" ];
-      mainProgram = "grass-desktop";
-    };
-  };
 in
 {
   # Needed for discord and wpsoffice (both unfree). Everything else installed
@@ -253,8 +210,6 @@ in
     # Notes / productivity
     obsidian
 
-    # Grass Desktop Node (Solana DePIN bandwidth sharing)
-    grassDesktop
 
     # Notion has no real Linux client. notion-app-enhanced (tried first)
     # bundles a fossilized Electron 11/Chrome 87 that Notion's web app now
