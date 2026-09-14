@@ -395,6 +395,12 @@
           };
           modules = [
             ./hosts/desktop/default.nix
+            # Local restricted ROCm profile: localhost, no Manager/custom nodes.
+            ((import ./modules/services/comfyui-profile.nix).outputs {
+              self = { };
+              inherit comfyui-nix;
+            }).nixosModules.default
+            { services.comfyui.enable = true; }
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
