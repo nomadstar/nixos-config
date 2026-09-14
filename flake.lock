@@ -258,11 +258,11 @@
     "sone": {
       "flake": false,
       "locked": {
-        "lastModified": 1789156428,
-        "narHash": "sha256-yYTBnMvgCSBLLERKNg4rpdiGs8bKceVUCVfOA/0dufI=",
+        "lastModified": 1789412372,
+        "narHash": "sha256-+g1C1EgbCTxlejcnNRiA7IcXZ9+3PgqRA83kONUj220=",
         "owner": "lullabyX",
         "repo": "sone",
-        "rev": "a9bc0d63e39244b6bd5fe5afd35f04b4a463d6cf",
+        "rev": "33d533b2a0a642ebaf3bdc3e6abcbe23af51c9ad",
         "type": "github"
       },
       "original": {
