@@ -241,6 +241,7 @@ in
     turbovnc
     mpv
     kdePackages.gwenview
+    kdePackages.kimageformats # HEIC/HEIF and other image readers for Gwenview.
     # Office suite (unfree, hence allowUnfree above)
     wpsoffice
 
