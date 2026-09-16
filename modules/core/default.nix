@@ -15,5 +15,6 @@
     ../hardware/detect-gpu.nix
     ./codebase-memory-mcp.nix
     ./malware-check.nix
+    ./openrgb.nix
   ];
 }

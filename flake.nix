@@ -157,7 +157,7 @@
           src = sone;
           pnpm = pkgsUnstable.pnpm_11;
           fetcherVersion = 4;
-          hash = "sha256-hT9CJTGRoDPV5BAlXTfR3wO4QNpq3Pag6Fvqag29w5c=";
+          hash = "sha256-Yu1FBJv3jeHFBHX4StEe4UWGqPID7zTuvOpHjAye6hY=";
         };
       });
 
@@ -395,6 +395,12 @@
           };
           modules = [
             ./hosts/desktop/default.nix
+            # Local restricted ROCm profile: localhost, no Manager/custom nodes.
+            ((import ./modules/services/comfyui-profile.nix).outputs {
+              self = { };
+              inherit comfyui-nix;
+            }).nixosModules.default
+            { services.comfyui.enable = true; }
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {

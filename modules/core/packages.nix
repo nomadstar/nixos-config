@@ -22,6 +22,7 @@ let
   yt-dlp = pkgsUnstable.yt-dlp.overridePythonAttrs (old: {
     dependencies = map (d: if (d.pname or null) == "curl-cffi" then fixedCurlCffi else d) old.dependencies;
   });
+
 in
 {
   # Needed for discord and wpsoffice (both unfree). Everything else installed
@@ -209,6 +210,7 @@ in
     # Notes / productivity
     obsidian
 
+
     # Notion has no real Linux client. notion-app-enhanced (tried first)
     # bundles a fossilized Electron 11/Chrome 87 that Notion's web app now
     # refuses to load ("browser is not compatible") - and it's stuck there,
@@ -239,6 +241,7 @@ in
     turbovnc
     mpv
     kdePackages.gwenview
+    kdePackages.kimageformats # HEIC/HEIF and other image readers for Gwenview.
     # Office suite (unfree, hence allowUnfree above)
     wpsoffice
 
