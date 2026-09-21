@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1789802026,
-        "narHash": "sha256-Q36Xa8cQftL4apO5jKhhvhaEJbfEKFDOltM44JxEjmY=",
+        "lastModified": 1789975565,
+        "narHash": "sha256-PcrCo1R94xt6t2PcdZRwrZHXnQfCizdZTJZl+pRsXw8=",
         "owner": "jacopone",
         "repo": "antigravity-nix",
-        "rev": "b92ea8e30f8b8dc0892586940c1437d52228e14c",
+        "rev": "9c394cf29f2424e8d4168da91349cbc8ddeaedca",
         "type": "github"
       },
       "original": {
