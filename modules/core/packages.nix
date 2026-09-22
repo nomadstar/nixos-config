@@ -267,6 +267,7 @@ in
     # this Roku 2026-08-12: casting no longer drops at 30s.
     
     ffmpeg
+    libheif
     (gnome-network-displays.overrideAttrs (old: {
       postPatch = (old.postPatch or "") + ''
         substituteInPlace src/wfd/wfd-client.c \
