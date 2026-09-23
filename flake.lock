@@ -6,11 +6,27 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
+<<<<<<< Updated upstream
         "lastModified": 1790061387,
         "narHash": "sha256-1VHT2mFdk4iIE8aybvuRvyrb39U3ohFM+NW3ms1MTTA=",
         "owner": "jacopone",
         "repo": "antigravity-nix",
         "rev": "100cb49a36c4825232d374fa085bf8ddb3022bab",
+=======
+<<<<<<< HEAD
+        "lastModified": 1789802026,
+        "narHash": "sha256-Q36Xa8cQftL4apO5jKhhvhaEJbfEKFDOltM44JxEjmY=",
+        "owner": "jacopone",
+        "repo": "antigravity-nix",
+        "rev": "b92ea8e30f8b8dc0892586940c1437d52228e14c",
+=======
+        "lastModified": 1790061387,
+        "narHash": "sha256-1VHT2mFdk4iIE8aybvuRvyrb39U3ohFM+NW3ms1MTTA=",
+        "owner": "jacopone",
+        "repo": "antigravity-nix",
+        "rev": "100cb49a36c4825232d374fa085bf8ddb3022bab",
+>>>>>>> 2f3426a4173bcf4527a3d3e2bcb6fbdd6e1f1f42
+>>>>>>> Stashed changes
         "type": "github"
       },
       "original": {
