@@ -262,19 +262,12 @@ in
     # aggregate control URL rtsp://localhost/wfd1.0 (which is what the
     # *other* GET_PARAMETER/SET_PARAMETER calls in the same file already
     # use). The maintainer floated this exact one-line change in #20 as
-    # "more correct per spec" but the original reporter's device still
-    # hung with it, so it was never merged upstream. Confirmed fixed on
-    # this Roku 2026-08-12: casting no longer drops at 30s.
+    # Upstream merged the aggregate control URL fix in 0.99.0 (benzea/gnome-network-displays#20).
     
     ffmpeg
     libheif
     (gnome-network-displays.overrideAttrs (old: {
       postPatch = (old.postPatch or "") + ''
-        substituteInPlace src/wfd/wfd-client.c \
-          --replace-fail \
-            'gst_rtsp_message_init_request (&msg, GST_RTSP_GET_PARAMETER, "rtsp://localhost/wfd1.0/streamid=0");' \
-            'gst_rtsp_message_init_request (&msg, GST_RTSP_GET_PARAMETER, "rtsp://localhost/wfd1.0");'
-
         # NdCCProvider's Avahi service browser fires service_added_cb once
         # per protocol for dual-stack (IPv4+IPv6) mDNS announcements - every
         # Chromecast/Android TV on this network announces both. The
