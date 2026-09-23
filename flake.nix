@@ -766,24 +766,24 @@
               at-spi2-core
               dbus
               libxkbcommon
-              xorg.libX11
-              xorg.libXcomposite
-              xorg.libXdamage
-              xorg.libXext
-              xorg.libXfixes
-              xorg.libXrandr
-              xorg.libxcb
-              xorg.libXcursor
-              xorg.libXi
-              xorg.libXrender
-              xorg.libXtst
-              xorg.libxkbfile
-              xorg.xcbutil
-              xorg.xcbutilcursor
-              xorg.xcbutilimage
-              xorg.xcbutilkeysyms
-              xorg.xcbutilrenderutil
-              xorg.xcbutilwm
+              libx11
+              libxcomposite
+              libxdamage
+              libxext
+              libxfixes
+              libxrandr
+              libxcb
+              libxcursor
+              libxi
+              libxrender
+              libxtst
+              libxkbfile
+              libxcb-util
+              libxcb-cursor
+              libxcb-image
+              libxcb-keysyms
+              libxcb-render-util
+              libxcb-wm
               mesa
               libglvnd
               libGL
