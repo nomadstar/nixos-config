@@ -56,6 +56,13 @@
     # upstream flake packages ComfyUI together with matching PyTorch/ROCm
     # wheels, which can move faster than this system's stable nixpkgs.
     comfyui-nix.url = "github:utensils/comfyui-nix";
+
+    # Windscribe VPN client for NixOS (unofficial repack of upstream Debian build).
+    # Follows nixpkgs so the package is evaluated against the same base set.
+    windscribe = {
+      url = "github:ParkerrDev/nixpkgs-windscribe";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # ============================================================================
@@ -74,6 +81,7 @@
       codebase-memory-mcp,
       sone,
       comfyui-nix,
+      windscribe,
       ...
     }:
     let
@@ -409,6 +417,8 @@
               home-manager.extraSpecialArgs = { inherit nvimConfig; };
               home-manager.users.nanixtus = import ./hosts/desktop/home.nix;
             }
+            windscribe.nixosModules.windscribe
+            { services.windscribe.enable = true; }
           ];
         };
 
@@ -429,6 +439,8 @@
               home-manager.extraSpecialArgs = { inherit nvimConfig; };
               home-manager.users.nanixtus = import ./hosts/laptop/home.nix;
             }
+            windscribe.nixosModules.windscribe
+            { services.windscribe.enable = true; }
           ];
         };
       };

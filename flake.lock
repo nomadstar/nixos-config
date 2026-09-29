@@ -252,7 +252,8 @@
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nvimConfig": "nvimConfig",
         "sone": "sone",
-        "sops-nix": "sops-nix"
+        "sops-nix": "sops-nix",
+        "windscribe": "windscribe"
       }
     },
     "sone": {
@@ -303,6 +304,26 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "windscribe": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789828742,
+        "narHash": "sha256-Ear/x4tzNGB1hI/sE2fgFGOCgsQM+BZe8h3scvLv4tI=",
+        "owner": "ParkerrDev",
+        "repo": "nixpkgs-windscribe",
+        "rev": "a7485a60d4642247fde83078f2484fe14efaaf37",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ParkerrDev",
+        "repo": "nixpkgs-windscribe",
         "type": "github"
       }
     }
