@@ -1,13 +1,15 @@
 { config, lib, pkgs, ... }:
 
-# VMs (qemu/KVM via libvirtd) and containers (podman), enabled system-wide
-# rather than left to a devShell: both need kernel/system-level integration
-# that doesn't work well from an isolated shell -
+# VMs (qemu/KVM via libvirtd), containers (podman), and Android apps (waydroid),
+# enabled system-wide rather than left to a devShell: all need kernel/system-level
+# integration that doesn't work well from an isolated shell -
 # - libvirtd: /dev/kvm access, the libvirtd group, the virtlogd/virtqemud
 #   daemons that actually run the VMs.
 # - podman rootless: subuid/subgid ranges assigned to the user, which NixOS
 #   handles automatically for normal users but only takes effect through the
 #   system module, not a plain package.
+# - waydroid: binder_linux/ashmem_linux kernel modules + the waydroid-container
+#   LXC service that must run as root - the same reasoning applies.
 # Same reasoning as modules/core/security.nix's programs.wireshark.enable.
 {
   virtualisation.libvirtd.enable = true;
@@ -51,4 +53,10 @@
   # `podman build/run --platform linux/arm64` pulling/running non-x86_64
   # container images without a full VM.
   boot.binfmt.emulatedSystems = [ "aarch64-linux" "armv7l-linux" "riscv64-linux" ];
+
+  # Waydroid: run Android apps natively in a Wayland session.
+  # The module handles binder_linux/ashmem_linux kernel modules and the
+  # waydroid-container LXC service automatically - no manual modprobe needed.
+  # After `nixos-rebuild switch`, run once: sudo waydroid init
+  virtualisation.waydroid.enable = true;
 }
