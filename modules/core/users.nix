@@ -3,6 +3,13 @@
 {
   users.users.nanixtus = {
     isNormalUser = true;
+    # Explicit subordinate ID ranges for rootless Podman.
+    subUidRanges = [
+      { startUid = 100000; count = 65536; }
+    ];
+    subGidRanges = [
+      { startGid = 100000; count = 65536; }
+    ];
     description = "Ignatus";
     # "input" grants read access to /dev/input/event* (root:input, no
     # uaccess ACL by default) - needed for waybar's keyboard-state module
