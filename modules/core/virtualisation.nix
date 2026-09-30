@@ -12,6 +12,40 @@
 #   LXC service that must run as root - the same reasoning applies.
 # Same reasoning as modules/core/security.nix's programs.wireshark.enable.
 {
+  # Kernel 6.18+ on this system is compiled without CONFIG_IP_TABLES (legacy
+  # iptables), using nftables exclusively. waydroid-net.sh hardcodes
+  # LXC_USE_NFT="false" and prefers iptables-legacy, which fails with:
+  #   "Module ip_tables not found" / "Table does not exist"
+  # Patch the script to flip LXC_USE_NFT="true" and add nft to its PATH.
+  nixpkgs.overlays = [
+    (final: prev: {
+      waydroid = prev.waydroid.overrideAttrs (old: {
+        postFixup = (old.postFixup or "") + ''
+          # Flip the networking backend from legacy iptables to nftables.
+          # The waydroid-net.sh-wrapped binary is a compiled C wrapper that
+          # prepends a PATH and then exec's the real shell script. The shell
+          # script itself is .waydroid-net.sh-wrapped (plain text); patch that.
+          local script="$out/lib/waydroid/data/scripts/.waydroid-net.sh-wrapped"
+
+          # 1. Enable nftables mode in the shell script.
+          substituteInPlace "$script" \
+            --replace-fail 'LXC_USE_NFT="false"' 'LXC_USE_NFT="true"'
+
+          # 2. Rebuild the C wrapper so that nft (from nftables) is on PATH.
+          #    The original wrapper was built with makeCWrapper; recreate it
+          #    with nftables prepended to the existing PATH prefix.
+          local nft_bin="${final.nftables}/bin"
+          local orig_wrapper="$out/lib/waydroid/data/scripts/waydroid-net.sh"
+
+          # makeCWrapper is available via the makeBinaryWrapper setup hook.
+          rm -f "$orig_wrapper"
+          makeCWrapper "$script" "$orig_wrapper" \
+            --inherit-argv0 \
+            --prefix PATH : "$nft_bin:${final.dnsmasq}/bin:${final.glibc.bin}/bin:${final.iproute2}/bin:${final.iptables}/bin"
+        '';
+      });
+    })
+  ];
   virtualisation.libvirtd.enable = true;
 
   # GUI frontend for libvirtd - create/manage VMs without hand-writing
