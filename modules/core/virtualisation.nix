@@ -75,7 +75,9 @@ WRAPPER
     policy = {
       default = [{ type = "reject"; }];
       transports = {
+        docker."docker.io" = [{ type = "insecureAcceptAnything"; }];
         docker."docker.io/library" = [{ type = "insecureAcceptAnything"; }];
+        docker."mcr.microsoft.com" = [{ type = "insecureAcceptAnything"; }];
         docker."docker.io/nvidia" = [{ type = "insecureAcceptAnything"; }];
         docker."nvcr.io/nvidia" = [{ type = "insecureAcceptAnything"; }];
         docker-daemon."" = [{ type = "insecureAcceptAnything"; }];
