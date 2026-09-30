@@ -204,11 +204,11 @@ Tooling for specific domains (AI/local LLM work, GUI editors, pentesting,
 SDR) is **not** installed into the base system. Instead:
 
 ```sh
-nix develop .#ai         # python, claude (Claude Code CLI), agy (Antigravity CLI),
+nix develop .#ai         # python, .NET SDK, claude (Claude Code CLI), agy (Antigravity CLI),
                           # ollama + opencode (from nixpkgs-unstable, see Package
                           # freshness below), ROCm diagnostics (rocminfo, rocm-smi)
 nix develop .#ai-laptop  # same, with CUDA instead of ROCm (laptop's NVIDIA GPU)
-nix develop .#developer  # VS Code + Antigravity IDE - GUI editors, kept out of
+nix develop .#developer  # .NET SDK + VS Code + Antigravity IDE - GUI editors, kept out of
                           # both the base system and the ai shell since they're
                           # heavy and only needed on demand
 nix develop .#pentest    # nmap, wireshark, gobuster, hydra, sqlmap, netcat

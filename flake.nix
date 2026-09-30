@@ -348,6 +348,7 @@
           packages =
             (with pkgs; [
               python311
+              dotnet-sdk
               python3Packages.pip
               python3Packages.virtualenv
               uv
@@ -671,7 +672,7 @@
           packages = [
             pkgsUnfree.vscode
             antigravity-nix.packages.${system}.google-antigravity-ide
-          ] ++ (with pkgs; [ gcc cmake ninja pkg-config nodejs yarn bun pnpm ]) ++ (with pkgs.rocmPackages; [
+          ] ++ (with pkgs; [ gcc cmake ninja pkg-config nodejs yarn bun pnpm dotnet-sdk ]) ++ (with pkgs.rocmPackages; [
             # Minimal HIP compile+run toolchain for desktop's AMD Radeon RX
             # 9060 XT (gfx1200) - `clr` is the HIP runtime/ROCclr (also
             # installs the HIP headers and its own patched clang toolchain
