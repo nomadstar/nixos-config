@@ -21,27 +21,34 @@
     (final: prev: {
       waydroid = prev.waydroid.overrideAttrs (old: {
         postFixup = (old.postFixup or "") + ''
-          # Flip the networking backend from legacy iptables to nftables.
-          # The waydroid-net.sh-wrapped binary is a compiled C wrapper that
-          # prepends a PATH and then exec's the real shell script. The shell
-          # script itself is .waydroid-net.sh-wrapped (plain text); patch that.
-          local script="$out/lib/waydroid/data/scripts/.waydroid-net.sh-wrapped"
+          local scripts="$out/lib/waydroid/data/scripts"
+          chmod -R +w "$scripts"
 
-          # 1. Enable nftables mode in the shell script.
-          substituteInPlace "$script" \
+          # 1. Switch networking backend: kernel has no CONFIG_IP_TABLES so
+          #    iptables-legacy fails. Flip the flag so waydroid-net.sh uses nft.
+          substituteInPlace "$scripts/.waydroid-net.sh-wrapped" \
             --replace-fail 'LXC_USE_NFT="false"' 'LXC_USE_NFT="true"'
 
-          # 2. Rebuild the C wrapper so that nft (from nftables) is on PATH.
-          #    The original wrapper was built with makeCWrapper; recreate it
-          #    with nftables prepended to the existing PATH prefix.
-          local nft_bin="${final.nftables}/bin"
-          local orig_wrapper="$out/lib/waydroid/data/scripts/waydroid-net.sh"
-
-          # makeCWrapper is available via the makeBinaryWrapper setup hook.
-          rm -f "$orig_wrapper"
-          makeCWrapper "$script" "$orig_wrapper" \
-            --inherit-argv0 \
-            --prefix PATH : "$nft_bin:${final.dnsmasq}/bin:${final.glibc.bin}/bin:${final.iproute2}/bin:${final.iptables}/bin"
+          # 2. The original waydroid-net.sh is a compiled C binary wrapper that
+          #    prepends PATH entries (dnsmasq, getent, iproute2, iptables) and
+          #    then exec's .waydroid-net.sh-wrapped (the real shell script).
+          #    Replace it with a plain shell wrapper that carries ALL of those
+          #    PATH entries forward, plus nftables/bin for the nft command.
+          #    (makeCWrapper is not available as a hook in postFixup.)
+          rm -f "$scripts/waydroid-net.sh"
+          cat > "$scripts/waydroid-net.sh" << 'WRAPPER'
+#!/bin/sh
+exec env PATH="@NFT@:@DNSMASQ@:@GETENT@:@IPROUTE2@:@IPTABLES@:$PATH" \
+  "$(dirname "$0")/.waydroid-net.sh-wrapped" "$@"
+WRAPPER
+          sed -i \
+            -e "s|@NFT@|${final.nftables}/bin|" \
+            -e "s|@DNSMASQ@|${final.dnsmasq}/bin|" \
+            -e "s|@GETENT@|${final.glibc.bin}/bin|" \
+            -e "s|@IPROUTE2@|${final.iproute2}/bin|" \
+            -e "s|@IPTABLES@|${final.iptables}/bin|" \
+            "$scripts/waydroid-net.sh"
+          chmod +x "$scripts/waydroid-net.sh"
         '';
       });
     })
