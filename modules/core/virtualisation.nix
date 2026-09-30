@@ -58,5 +58,25 @@
   # The module handles binder_linux/ashmem_linux kernel modules and the
   # waydroid-container LXC service automatically - no manual modprobe needed.
   # After `nixos-rebuild switch`, run once: sudo waydroid init
+  #
+  # GPU rendering strategy - driven by hardwareProfile.gpu.displayVendor:
+  #   amd / intel → Mesa/gbm works out-of-the-box, no extra flags needed.
+  #     desktop:  AMD RX 9060 XT (discrete, displayVendor = "amd")   → mesa
+  #     laptop:   Intel iGPU     (hybrid,   displayVendor = "intel")  → mesa
+  #       (the NVIDIA dGPU is PRIME-offloaded and never drives the display,
+  #        so Waydroid never needs to talk to it)
+  #   nvidia (pure discrete, no iGPU) → Waydroid has no official EGL path for
+  #     the proprietary NVIDIA driver; fall back to software rendering via
+  #     virgl so the container at least starts, at the cost of GPU perf.
+  #     Neither host today hits this branch, but it's here for completeness.
   virtualisation.waydroid.enable = true;
+
+  environment.etc."waydroid/waydroid_base.prop" =
+    lib.mkIf (config.hardwareProfile.gpu.displayVendor == "nvidia") {
+      text = ''
+        ro.hardware.gralloc=default
+        ro.hardware.egl=swiftshader
+      '';
+    };
 }
+
