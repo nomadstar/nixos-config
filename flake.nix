@@ -483,7 +483,12 @@
             # own store paths to PATH, they don't get merged into a bare
             # `python3`'s sys.path. withPackages builds one interpreter
             # with both baked into its site-packages instead.
-            pythonWithScapyScrapy = pkgs.python3.withPackages (ps: [ ps.scapy ps.scrapy ]);
+            pythonWithScapyScrapy = pkgs.python3.withPackages (ps: [
+              ps.scapy
+              (ps.scrapy.overridePythonAttrs (_: {
+                doCheck = false;
+              }))
+            ]);
           in
           pkgs.mkShell {
             name = "pentest-devshell";
