@@ -489,6 +489,32 @@
                 doCheck = false;
               }))
             ]);
+
+            patator = pkgs.python3Packages.buildPythonApplication {
+              pname = "patator";
+              version = "1.1.0";
+              pyproject = true;
+              src = pkgs.fetchFromGitHub {
+                owner = "lanjelot";
+                repo = "patator";
+                tag = "1.1.0";
+                hash = "sha256-HEQg0lrnV3O45As0pNDL7BoYa6BSBZaMmbMI848KHjI=";
+              };
+              build-system = [ pkgs.python3Packages.hatchling ];
+              dependencies = with pkgs.python3Packages; [
+                paramiko
+                pycurl
+                impacket
+                mysqlclient
+                psycopg2
+                pycryptodomex
+                dnspython
+                ipy
+                pysnmp
+              ];
+              dontCheckRuntimeDeps = true;
+              doCheck = false;
+            };
           in
           pkgs.mkShell {
             name = "pentest-devshell";
@@ -503,14 +529,9 @@
               # Web
               gobuster ffuf feroxbuster nikto nuclei sqlmap commix
 
-              # Credenciales (patator reemplazado por alternativas nativas)
-              # NB: the cracker is `thc-hydra`, NOT `hydra` - nixpkgs' plain
-              # `hydra` attribute is NixOS's own Nix-based continuous build
-              # system, a completely unrelated package. That name collision
-              # is why `hydra` silently "didn't work" here before: it did
-              # install, just not the tool anyone in this shell wants.
+              # Credenciales
               thc-hydra hashcat hashcat-utils john cewl crunch
-              medusa ncrack crowbar brutespray
+              medusa ncrack crowbar brutespray patator
 
               # Post-explotación / AD
               metasploit netexec evil-winrm enum4linux-ng smbmap
@@ -541,9 +562,6 @@
               # `python3` here would silently resolve to one *without* scapy
               # or scrapy. Force it back to the front explicitly.
               export PATH="${pythonWithScapyScrapy}/bin:$PATH"
-              # Fallback: si nixpkgs no trae patator o impacket, pipx los instala
-              command -v patator  >/dev/null 2>&1 || pipx install patator  >/dev/null 2>&1 || true
-              command -v secretsdump.py >/dev/null 2>&1 || pipx install impacket >/dev/null 2>&1 || true
               echo "pentest-devshell listo: patator=$(command -v patator) secretsdump=$(command -v secretsdump.py)"
             '';
           };
