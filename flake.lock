@@ -248,11 +248,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791905306,
-        "narHash": "sha256-p6vU11bfJ6f/Y+YfqaTCoxjubB9fn6Hefa7khiUAKC0=",
+        "lastModified": 1791932165,
+        "narHash": "sha256-4QPlCPLkIVwVvqPhsZcGIenfR+pOjBeMWv0lKr7Clek=",
         "owner": "nomadstar",
         "repo": "omdrop-owl",
-        "rev": "2a6f6d4331afea48850f8c591ca9189583338896",
+        "rev": "0e6cba89d53c1c04b57cefcb19634f2e1c025a83",
         "type": "github"
       },
       "original": {
