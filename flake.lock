@@ -241,6 +241,26 @@
         "type": "github"
       }
     },
+    "omdrop-owl": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1791905306,
+        "narHash": "sha256-p6vU11bfJ6f/Y+YfqaTCoxjubB9fn6Hefa7khiUAKC0=",
+        "owner": "nomadstar",
+        "repo": "omdrop-owl",
+        "rev": "2a6f6d4331afea48850f8c591ca9189583338896",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nomadstar",
+        "repo": "omdrop-owl",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "antigravity-nix": "antigravity-nix",
@@ -251,6 +271,7 @@
         "nixpkgs": "nixpkgs_4",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nvimConfig": "nvimConfig",
+        "omdrop-owl": "omdrop-owl",
         "sone": "sone",
         "sops-nix": "sops-nix",
         "windscribe": "windscribe"

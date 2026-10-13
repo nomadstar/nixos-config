@@ -63,6 +63,12 @@
       url = "github:ParkerrDev/nixpkgs-windscribe";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # AirDrop radio backend for non-Broadcom Wi-Fi using OWL
+    omdrop-owl = {
+      url = "github:nomadstar/omdrop-owl";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # ============================================================================
@@ -82,6 +88,7 @@
       sone,
       comfyui-nix,
       windscribe,
+      omdrop-owl,
       ...
     }:
     let
@@ -420,6 +427,8 @@
             }
             windscribe.nixosModules.windscribe
             { services.windscribe.enable = true; }
+            omdrop-owl.nixosModules.default
+            { services.omdrop-owl.enable = true; }
           ];
         };
 
@@ -442,6 +451,8 @@
             }
             windscribe.nixosModules.windscribe
             { services.windscribe.enable = true; }
+            omdrop-owl.nixosModules.default
+            { services.omdrop-owl.enable = true; }
           ];
         };
       };
