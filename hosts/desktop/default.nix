@@ -10,12 +10,8 @@
     ../../modules/hardware/rtl-sdr.nix
   ];
 
-  # Optional boot entry for the Intel AC 3168 IBSS investigation.
-  # Keep the normal boot entry on its existing LTS kernel.
-  specialisation.ibss-kernel-test.configuration = {
-    boot.kernelPackages = lib.mkForce pkgs.linuxPackages_latest;
-    system.nixos.tags = [ "ibss-kernel-test" ];
-  };
+  # Use the latest stable kernel for the desktop's normal boot entry.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   networking.hostName = "nanixos";
   time.timeZone = "America/Santiago";
