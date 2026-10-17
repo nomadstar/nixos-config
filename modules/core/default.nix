@@ -16,5 +16,6 @@
     ./codebase-memory-mcp.nix
     ./malware-check.nix
     ./openrgb.nix
+    ./ollama.nix
   ];
 }
