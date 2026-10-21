@@ -10,6 +10,9 @@
     ../../modules/hardware/rtl-sdr.nix
   ];
 
+  # Use the latest stable kernel for the desktop's normal boot entry.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
   networking.hostName = "nanixos";
   time.timeZone = "America/Santiago";
 
