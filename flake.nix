@@ -110,84 +110,30 @@
       # Custom Packages & Derivations
       # ------------------------------------------------------------------------
 
-      # ADE's Linux brain/CLI with its matching native runtime sidecar.
-      # Upstream currently ships the desktop GUI only for macOS/Windows.
-      adePkg = pkgs.stdenv.mkDerivation rec {
-        pname = "ade";
-        version = "1.2.127";
+      # Orca: agent development environment desktop app (Linux AppImage).
+      # Upstream ships the Linux desktop build as a single self-contained
+      # AppImage, so no runtime sidecar is needed.
+      orcaPkg = pkgs.stdenv.mkDerivation rec {
+        pname = "orca";
+        version = "1.4.245";
         src = pkgs.fetchurl {
-          url = "https://github.com/arul28/ADE/releases/download/v${version}/ade-linux-x64";
-          hash = "sha256-P0MGFsgby6tSH/ZpN1y59DZMVritDkT+SMMaNZkh7Nc=";
-        };
-        nativeRuntime = pkgs.fetchurl {
-          url = "https://github.com/arul28/ADE/releases/download/v${version}/ade-linux-x64.native.tar.gz";
-          hash = "sha256-3xMZ1Xr5kt1WCAmmIFE1919vbu5T3k7/4m5knp3UAa0=";
+          url = "https://github.com/stablyai/orca/releases/download/v${version}/orca-linux.AppImage";
+          hash = "sha256-uNwzG8ck3gTasysc79OWlUANoVpTAiBUuXaC7a0f+dg=";
         };
         dontUnpack = true;
-        # The executable contains Bun's embedded application payload.
+        # The AppImage is a self-contained static build; nothing to unpack.
         dontStrip = true;
-        nativeBuildInputs = [ pkgs.autoPatchelfHook pkgs.makeWrapper ];
-        buildInputs = [ pkgs.stdenv.cc.cc.lib ];
         installPhase = ''
           runHook preInstall
-          install -Dm755 "$src" "$out/libexec/ade/ade"
-          mkdir -p "$out/lib/ade" "$out/bin"
-          tar -xzf "$nativeRuntime" -C "$out/lib/ade"
-          makeWrapper "$out/libexec/ade/ade" "$out/bin/ade" \
-            --set ADE_RUNTIME_ROOT "$out/lib/ade" \
-            --set ADE_RUNTIME_NODE_MODULES "$out/lib/ade/node_modules" \
-            --prefix NODE_PATH : "$out/lib/ade/node_modules" \
-            --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.git pkgs.openssh ]}
+          install -Dm755 "$src" "$out/bin/orca"
           runHook postInstall
         '';
         meta = {
-          description = "ADE agentic development environment brain and CLI";
-          homepage = "https://www.ade-app.dev/";
-          mainProgram = "ade";
+          description = "Orca agent development environment (runs AI coding agents side by side)";
+          homepage = "https://www.onorca.dev/";
+          mainProgram = "orca";
           platforms = [ "x86_64-linux" ];
         };
-      };
-
-      # Use ADE's official hosted frontend against the existing machine brain.
-      # --socket forbids the CLI from spawning a fallback runtime. Account
-      # linking remains an explicit user action (`ade connect`).
-      adeGui = pkgs.writeShellApplication {
-        name = "ade-gui";
-        runtimeInputs = [ adePkg pkgs.xdg-utils ];
-        text = ''
-          url="https://app.ade-app.dev"
-          case "''${1:-}" in
-            --help|-h)
-              echo "Usage: ade-gui [--status|--url|--help]"
-              echo "Open the official ADE web interface in your default browser."
-              echo "First-time setup: ade connect; then sign in to the web interface with the same account."
-              echo "Uses the existing machine brain and ADE_HOME; never starts a runtime."
-              exit 0
-              ;;
-            --url)
-              echo "$url"
-              exit 0
-              ;;
-            --status)
-              ade brain status --text
-              exec ade --socket connect --status --text
-              ;;
-            "") ;;
-            *)
-              echo "Unknown option: $1. Run ade-gui --help." >&2
-              exit 2
-              ;;
-          esac
-
-          if ! ade --socket connect --status --text; then
-            echo "To link this machine to the official interface, run: ade connect" >&2
-            echo "Then sign in to the web interface with the same ADE account." >&2
-          fi
-          # The ai shell exports Camoufox's library path, whose NSS can be
-          # older than the default browser's. Let that browser use its own
-          # Nix-wrapped libraries when opening ADE and Google sign-in.
-          exec ${pkgs.coreutils}/bin/env -u LD_LIBRARY_PATH xdg-open "$url"
-        '';
       };
 
       # codebase-memory-mcp: built from source with graph UI embedded
@@ -433,7 +379,7 @@
           name = "ai-devshell";
           inputsFrom = extraShells;
           packages =
-            [ adePkg adeGui ]
+            [ orcaPkg ]
             ++ (with pkgs; [
               python311
               dotnet-sdk
@@ -475,8 +421,7 @@
       # 3. STANDALONE PACKAGES
       # ========================================================================
       packages.${system} = {
-        ade = adePkg;
-        ade-gui = adeGui;
+        orca = orcaPkg;
         sone = sonePkg;
         default = sonePkg;
       };

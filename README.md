@@ -218,26 +218,23 @@ nix develop .#sdr        # rtl-sdr, gqrx, gnuradio
 These are throwaway shells - nothing they provide persists outside the shell,
 and none of it touches `environment.systemPackages`.
 
-### ADE official interface
+### Orca
 
-Both AI shells include `ade` (Brain/CLI) and `ade-gui`, a launcher for the
-[official web client](https://app.ade-app.dev). The launcher opens your default
-browser; it does not compile or serve a local copy of the frontend.
+The AI dev shells include `orca` (desktop app; the Linux build ships as a
+self-contained AppImage - `orca-linux.AppImage` from the
+[stablyai/orca releases](https://github.com/stablyai/orca)) - the
+[Orca](https://www.onorca.dev/) agent development environment. Orca runs AI
+coding agents (Claude Code, Codex, OpenCode, Cursor CLI, ...) side by side in
+isolated git worktrees, each with its own agent terminal and browser tab.
 
 ```sh
 nix develop .#ai
-ade connect          # first time: sign in and register the machine's Brain service
-ade-gui              # sign in with the same account and select this machine
-ade-gui --status     # inspect the Brain and account connection
+orca
 ```
 
-The launcher uses the existing machine Brain and respects `ADE_HOME`. Its
-status check uses `--socket` so it cannot start a fallback runtime. It never
-starts a second Brain or registers a project. `ade connect` manages the normal
-per-user Brain service; Brain data and sessions persist under ADE's data
-directory, independently of the development shell. Account sign-in and machine
-selection require user interaction. Until those steps are complete, an
-end-to-end GUI connection has not been verified.
+The Linux desktop build is a single self-contained AppImage - no hosted web
+frontend, no machine brain and no fallback runtime: the desktop app drives the
+agents directly.
 
 ### GPU compatibility
 
