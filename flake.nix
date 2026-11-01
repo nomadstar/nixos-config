@@ -110,6 +110,44 @@
       # Custom Packages & Derivations
       # ------------------------------------------------------------------------
 
+      # ADE's Linux brain/CLI with its matching native runtime sidecar.
+      # Upstream currently ships the desktop GUI only for macOS/Windows.
+      adePkg = pkgs.stdenv.mkDerivation rec {
+        pname = "ade";
+        version = "1.2.127";
+        src = pkgs.fetchurl {
+          url = "https://github.com/arul28/ADE/releases/download/v${version}/ade-linux-x64";
+          hash = "sha256-P0MGFsgby6tSH/ZpN1y59DZMVritDkT+SMMaNZkh7Nc=";
+        };
+        nativeRuntime = pkgs.fetchurl {
+          url = "https://github.com/arul28/ADE/releases/download/v${version}/ade-linux-x64.native.tar.gz";
+          hash = "sha256-3xMZ1Xr5kt1WCAmmIFE1919vbu5T3k7/4m5knp3UAa0=";
+        };
+        dontUnpack = true;
+        # The executable contains Bun's embedded application payload.
+        dontStrip = true;
+        nativeBuildInputs = [ pkgs.autoPatchelfHook pkgs.makeWrapper ];
+        buildInputs = [ pkgs.stdenv.cc.cc.lib ];
+        installPhase = ''
+          runHook preInstall
+          install -Dm755 "$src" "$out/libexec/ade/ade"
+          mkdir -p "$out/lib/ade" "$out/bin"
+          tar -xzf "$nativeRuntime" -C "$out/lib/ade"
+          makeWrapper "$out/libexec/ade/ade" "$out/bin/ade" \
+            --set ADE_RUNTIME_ROOT "$out/lib/ade" \
+            --set ADE_RUNTIME_NODE_MODULES "$out/lib/ade/node_modules" \
+            --prefix NODE_PATH : "$out/lib/ade/node_modules" \
+            --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.git pkgs.openssh ]}
+          runHook postInstall
+        '';
+        meta = {
+          description = "ADE agentic development environment brain and CLI";
+          homepage = "https://www.ade-app.dev/";
+          mainProgram = "ade";
+          platforms = [ "x86_64-linux" ];
+        };
+      };
+
       # codebase-memory-mcp: built from source with graph UI embedded
       # (`make -f Makefile.cbm cbm-with-ui`).
       codebaseMemoryMcp = pkgs.stdenv.mkDerivation {
@@ -353,7 +391,8 @@
           name = "ai-devshell";
           inputsFrom = extraShells;
           packages =
-            (with pkgs; [
+            [ adePkg ]
+            ++ (with pkgs; [
               python311
               dotnet-sdk
               python3Packages.pip
@@ -394,6 +433,7 @@
       # 3. STANDALONE PACKAGES
       # ========================================================================
       packages.${system} = {
+        ade = adePkg;
         sone = sonePkg;
         default = sonePkg;
       };
