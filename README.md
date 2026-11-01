@@ -218,6 +218,27 @@ nix develop .#sdr        # rtl-sdr, gqrx, gnuradio
 These are throwaway shells - nothing they provide persists outside the shell,
 and none of it touches `environment.systemPackages`.
 
+### ADE official interface
+
+Both AI shells include `ade` (Brain/CLI) and `ade-gui`, a launcher for the
+[official web client](https://app.ade-app.dev). The launcher opens your default
+browser; it does not compile or serve a local copy of the frontend.
+
+```sh
+nix develop .#ai
+ade connect          # first time: sign in and register the machine's Brain service
+ade-gui              # sign in with the same account and select this machine
+ade-gui --status     # inspect the Brain and account connection
+```
+
+The launcher uses the existing machine Brain and respects `ADE_HOME`. Its
+status check uses `--socket` so it cannot start a fallback runtime. It never
+starts a second Brain or registers a project. `ade connect` manages the normal
+per-user Brain service; Brain data and sessions persist under ADE's data
+directory, independently of the development shell. Account sign-in and machine
+selection require user interaction. Until those steps are complete, an
+end-to-end GUI connection has not been verified.
+
 ### GPU compatibility
 
 The `ai` devShell is built by a small `mkAiShell { gpu }` helper in

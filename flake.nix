@@ -148,6 +148,45 @@
         };
       };
 
+      # Use ADE's official hosted frontend against the existing machine brain.
+      # --socket forbids the CLI from spawning a fallback runtime. Account
+      # linking remains an explicit user action (`ade connect`).
+      adeGui = pkgs.writeShellApplication {
+        name = "ade-gui";
+        runtimeInputs = [ adePkg pkgs.xdg-utils ];
+        text = ''
+          url="https://app.ade-app.dev"
+          case "''${1:-}" in
+            --help|-h)
+              echo "Usage: ade-gui [--status|--url|--help]"
+              echo "Open the official ADE web interface in your default browser."
+              echo "First-time setup: ade connect; then sign in to the web interface with the same account."
+              echo "Uses the existing machine brain and ADE_HOME; never starts a runtime."
+              exit 0
+              ;;
+            --url)
+              echo "$url"
+              exit 0
+              ;;
+            --status)
+              ade brain status --text
+              exec ade --socket connect --status --text
+              ;;
+            "") ;;
+            *)
+              echo "Unknown option: $1. Run ade-gui --help." >&2
+              exit 2
+              ;;
+          esac
+
+          if ! ade --socket connect --status --text; then
+            echo "To link this machine to the official interface, run: ade connect" >&2
+            echo "Then sign in to the web interface with the same ADE account." >&2
+          fi
+          exec xdg-open "$url"
+        '';
+      };
+
       # codebase-memory-mcp: built from source with graph UI embedded
       # (`make -f Makefile.cbm cbm-with-ui`).
       codebaseMemoryMcp = pkgs.stdenv.mkDerivation {
@@ -391,7 +430,7 @@
           name = "ai-devshell";
           inputsFrom = extraShells;
           packages =
-            [ adePkg ]
+            [ adePkg adeGui ]
             ++ (with pkgs; [
               python311
               dotnet-sdk
@@ -434,6 +473,7 @@
       # ========================================================================
       packages.${system} = {
         ade = adePkg;
+        ade-gui = adeGui;
         sone = sonePkg;
         default = sonePkg;
       };
