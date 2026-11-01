@@ -183,7 +183,10 @@
             echo "To link this machine to the official interface, run: ade connect" >&2
             echo "Then sign in to the web interface with the same ADE account." >&2
           fi
-          exec xdg-open "$url"
+          # The ai shell exports Camoufox's library path, whose NSS can be
+          # older than the default browser's. Let that browser use its own
+          # Nix-wrapped libraries when opening ADE and Google sign-in.
+          exec ${pkgs.coreutils}/bin/env -u LD_LIBRARY_PATH xdg-open "$url"
         '';
       };
 
