@@ -392,6 +392,7 @@
               yarn
               bun
               pnpm
+              libgbm
             ])
             ++ (with pkgsUnstable; [
               ollama
