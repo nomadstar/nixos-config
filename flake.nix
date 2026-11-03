@@ -106,6 +106,11 @@
       # Deliberately bleeding-edge package set for fast-moving tools
       pkgsUnstable = nixpkgs-unstable.legacyPackages.${system};
 
+      copilotPkg = (import nixpkgs-unstable {
+        inherit system;
+        config.allowUnfreePredicate = pkg: pkgs.lib.getName pkg == "github-copilot-cli";
+      }).github-copilot-cli;
+
       # ------------------------------------------------------------------------
       # Custom Packages & Derivations
       # ------------------------------------------------------------------------
@@ -370,7 +375,7 @@
           name = "ai-devshell";
           inputsFrom = extraShells;
           packages =
-            [ orcaPkg ]
+            [ orcaPkg copilotPkg ]
             ++ (with pkgs; [
               python311
               dotnet-sdk
