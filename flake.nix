@@ -111,23 +111,14 @@
       # ------------------------------------------------------------------------
 
       # Orca: agent development environment desktop app (Linux AppImage).
-      # Upstream ships the Linux desktop build as a single self-contained
-      # AppImage, so no runtime sidecar is needed.
-      orcaPkg = pkgs.stdenv.mkDerivation rec {
+      # Supply the desktop libraries expected by the upstream AppImage.
+      orcaPkg = pkgs.appimageTools.wrapType2 rec {
         pname = "orca";
         version = "1.4.245";
         src = pkgs.fetchurl {
           url = "https://github.com/stablyai/orca/releases/download/v${version}/orca-linux.AppImage";
           hash = "sha256-uNwzG8ck3gTasysc79OWlUANoVpTAiBUuXaC7a0f+dg=";
         };
-        dontUnpack = true;
-        # The AppImage is a self-contained static build; nothing to unpack.
-        dontStrip = true;
-        installPhase = ''
-          runHook preInstall
-          install -Dm755 "$src" "$out/bin/orca"
-          runHook postInstall
-        '';
         meta = {
           description = "Orca agent development environment (runs AI coding agents side by side)";
           homepage = "https://www.onorca.dev/";
@@ -392,7 +383,6 @@
               yarn
               bun
               pnpm
-              libgbm
             ])
             ++ (with pkgsUnstable; [
               ollama
