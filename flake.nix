@@ -397,6 +397,7 @@
             ++ gpuPackages;
 
           shellHook = ''
+            export LD_LIBRARY_PATH="${pkgs.libgbm}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             export CAMOUFOX_TOOL_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/tools/camoufox-browser-0.1.1"
             export CAMOUFOX_BIN_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/bin/camoufox-browser-0.1.1"
             export PATH="$CAMOUFOX_BIN_DIR:$PATH"
