@@ -194,7 +194,7 @@
           src = sone;
           pnpm = pkgsUnstable.pnpm_11;
           fetcherVersion = 4;
-          hash = "sha256-Yu1FBJv3jeHFBHX4StEe4UWGqPID7zTuvOpHjAye6hY=";
+          hash = "sha256-zaX+fsEWaNmgL2Ib3LG5+k2AYbJO/QexXnOtQeHaCDk=";
         };
       });
 
@@ -389,11 +389,18 @@
               bun
               pnpm
             ])
-            ++ (with pkgsUnstable; [
-              ollama
-              opencode
-              codex
-            ])
+            ++ [
+              pkgsUnstable.ollama
+              # nixpkgs-unstable's opencode 2.2.5 expression currently has a
+              # stale fixed-output hash for its canonicalized node_modules.
+              # Keep the package while correcting only that dependency hash.
+              (pkgsUnstable.opencode.overrideAttrs (old: {
+                node_modules = old.node_modules.overrideAttrs (_: {
+                  outputHash = "sha256-prx9dX7kUvs/E3zopkaPk5LXh3xJAy5sZeum/W8L7cA=";
+                });
+              }))
+              pkgsUnstable.codex
+            ]
             ++ gpuPackages;
 
           shellHook = ''
