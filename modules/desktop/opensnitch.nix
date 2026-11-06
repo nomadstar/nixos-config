@@ -22,6 +22,17 @@
 {
   services.opensnitch.enable = true;
 
+  # Strict policy: unknown applications must be decided through the UI. If the
+  # UI is unavailable, deny the connection instead of silently allowing it.
+  # A decision is persistent by default so an already approved application
+  # does not prompt again for every connection.
+  services.opensnitch.settings = {
+    DefaultAction = "deny";
+    DefaultDuration = "always";
+    InterceptUnknown = true;
+    FwOptions.QueueBypass = false;
+  };
+
   # Declarative rules (written as symlinks into
   # services.opensnitch.settings.Rules.Path, which already resolves to
   # /etc/opensnitchd/rules - same directory opensnitchd's own shipped

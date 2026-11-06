@@ -106,9 +106,31 @@
       # Deliberately bleeding-edge package set for fast-moving tools
       pkgsUnstable = nixpkgs-unstable.legacyPackages.${system};
 
+      copilotPkg = (import nixpkgs-unstable {
+        inherit system;
+        config.allowUnfreePredicate = pkg: pkgs.lib.getName pkg == "github-copilot-cli";
+      }).github-copilot-cli;
+
       # ------------------------------------------------------------------------
       # Custom Packages & Derivations
       # ------------------------------------------------------------------------
+
+      # Orca: agent development environment desktop app (Linux AppImage).
+      # Supply the desktop libraries expected by the upstream AppImage.
+      orcaPkg = pkgs.appimageTools.wrapType2 rec {
+        pname = "orca";
+        version = "1.4.245";
+        src = pkgs.fetchurl {
+          url = "https://github.com/stablyai/orca/releases/download/v${version}/orca-linux.AppImage";
+          hash = "sha256-uNwzG8ck3gTasysc79OWlUANoVpTAiBUuXaC7a0f+dg=";
+        };
+        meta = {
+          description = "Orca agent development environment (runs AI coding agents side by side)";
+          homepage = "https://www.onorca.dev/";
+          mainProgram = "orca";
+          platforms = [ "x86_64-linux" ];
+        };
+      };
 
       # codebase-memory-mcp: built from source with graph UI embedded
       # (`make -f Makefile.cbm cbm-with-ui`).
@@ -172,7 +194,7 @@
           src = sone;
           pnpm = pkgsUnstable.pnpm_11;
           fetcherVersion = 4;
-          hash = "sha256-Yu1FBJv3jeHFBHX4StEe4UWGqPID7zTuvOpHjAye6hY=";
+          hash = "sha256-zaX+fsEWaNmgL2Ib3LG5+k2AYbJO/QexXnOtQeHaCDk=";
         };
       });
 
@@ -353,7 +375,8 @@
           name = "ai-devshell";
           inputsFrom = extraShells;
           packages =
-            (with pkgs; [
+            [ orcaPkg copilotPkg ]
+            ++ (with pkgs; [
               python311
               dotnet-sdk
               python3Packages.pip
@@ -366,14 +389,22 @@
               bun
               pnpm
             ])
-            ++ (with pkgsUnstable; [
-              ollama
-              opencode
-              codex
-            ])
+            ++ [
+              pkgsUnstable.ollama
+              # nixpkgs-unstable's opencode 2.2.5 expression currently has a
+              # stale fixed-output hash for its canonicalized node_modules.
+              # Keep the package while correcting only that dependency hash.
+              (pkgsUnstable.opencode.overrideAttrs (old: {
+                node_modules = old.node_modules.overrideAttrs (_: {
+                  outputHash = "sha256-prx9dX7kUvs/E3zopkaPk5LXh3xJAy5sZeum/W8L7cA=";
+                });
+              }))
+              pkgsUnstable.codex
+            ]
             ++ gpuPackages;
 
           shellHook = ''
+            export LD_LIBRARY_PATH="${pkgs.libgbm}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             export CAMOUFOX_TOOL_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/tools/camoufox-browser-0.1.1"
             export CAMOUFOX_BIN_DIR="''${XDG_DATA_HOME:-$HOME/.local/share}/uv/bin/camoufox-browser-0.1.1"
             export PATH="$CAMOUFOX_BIN_DIR:$PATH"
@@ -394,6 +425,7 @@
       # 3. STANDALONE PACKAGES
       # ========================================================================
       packages.${system} = {
+        orca = orcaPkg;
         sone = sonePkg;
         default = sonePkg;
       };

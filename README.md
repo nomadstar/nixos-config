@@ -218,6 +218,24 @@ nix develop .#sdr        # rtl-sdr, gqrx, gnuradio
 These are throwaway shells - nothing they provide persists outside the shell,
 and none of it touches `environment.systemPackages`.
 
+### Orca
+
+The AI dev shells include `orca` (desktop app; the Linux build ships as a
+self-contained AppImage - `orca-linux.AppImage` from the
+[stablyai/orca releases](https://github.com/stablyai/orca)) - the
+[Orca](https://www.onorca.dev/) agent development environment. Orca runs AI
+coding agents (Claude Code, Codex, OpenCode, Cursor CLI, ...) side by side in
+isolated git worktrees, each with its own agent terminal and browser tab.
+
+```sh
+nix develop .#ai
+orca
+```
+
+The Linux desktop build is a single self-contained AppImage - no hosted web
+frontend, no machine brain and no fallback runtime: the desktop app drives the
+agents directly.
+
 ### GPU compatibility
 
 The `ai` devShell is built by a small `mkAiShell { gpu }` helper in
