@@ -22,7 +22,7 @@
 {
   services.opensnitch.enable = true;
 
-  # Strict policy: unknown applications must be decided through the UI. If the
+  # Applications outside the Nix store must be decided through the UI. If the
   # UI is unavailable, deny the connection instead of silently allowing it.
   # A decision is persistent by default so an already approved application
   # does not prompt again for every connection.
@@ -49,6 +49,22 @@
   # (created outside Nix, by hand) spamming the daemon log all day
   # 2026-08-14 before it got fixed by hand-adding the field back.
   services.opensnitch.rules = {
+    # Match the resolved executable path, independent of the derivation hash.
+    # This trusts all Nix-store applications, including desktop applications
+    # and nix develop tools, rather than only the Nix package manager.
+    "permitir-procesos-nix-store" = {
+      name = "permitir-procesos-nix-store";
+      enabled = true;
+      action = "allow";
+      duration = "always";
+      created = "2026-11-05T00:00:00Z";
+      operator = {
+        type = "regexp";
+        sensitive = true;
+        operand = "process.path";
+        data = "^/nix/store/[^/]+/.+$";
+      };
+    };
     "permitir-avahi-mdns" = {
       name = "permitir-avahi-mdns";
       enabled = true;
