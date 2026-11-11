@@ -400,6 +400,16 @@
                 });
               }))
               pkgsUnstable.codex
+              # Hermes manages its own Python runtime and updates in ~/.hermes.
+              # Expose the official user installation in every AI shell.
+              (pkgs.writeShellScriptBin "hermes" ''
+                hermes_bin="$HOME/.hermes/hermes-agent/.hermes/bin/hermes"
+                if [ ! -x "$hermes_bin" ]; then
+                  echo "Hermes is not installed. Install it from https://hermes-agent.nousresearch.com/docs/getting-started/quickstart" >&2
+                  exit 1
+                fi
+                exec "$hermes_bin" "$@"
+              '')
             ]
             ++ gpuPackages;
 
