@@ -8,6 +8,10 @@ in
     enable = lib.mkDefault true;
     host = lib.mkDefault "0.0.0.0";
     port = lib.mkDefault 11434;
+    # Hermes requires at least 64K context; leave GPU memory allocation to Ollama.
+    environmentVariables = { OLLAMA_CONTEXT_LENGTH = "65536"; } // lib.optionalAttrs (gpuBackend == "rocm") {
+      HSA_OVERRIDE_GFX_VERSION = "12.0.0";
+    };
 
     # Dynamically select GPU accelerated package based on host computeBackend:
     # desktop (AMD) -> pkgs.ollama-rocm
@@ -25,10 +29,5 @@ in
     # For AMD RDNA 4 (Radeon RX 9060 XT, gfx1200 on desktop):
     rocmOverrideGfx = lib.mkIf (gpuBackend == "rocm") (lib.mkDefault "12.0.0");
 
-    environmentVariables = lib.mkMerge [
-      (lib.mkIf (gpuBackend == "rocm") {
-        HSA_OVERRIDE_GFX_VERSION = "12.0.0";
-      })
-    ];
   };
 }
