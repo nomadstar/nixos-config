@@ -106,6 +106,11 @@
       # Deliberately bleeding-edge package set for fast-moving tools
       pkgsUnstable = nixpkgs-unstable.legacyPackages.${system};
 
+      pkgsUnstableUnfree = import nixpkgs-unstable {
+        inherit system;
+        config.allowUnfree = true;
+      };
+
       copilotPkg = (import nixpkgs-unstable {
         inherit system;
         config.allowUnfreePredicate = pkg: pkgs.lib.getName pkg == "github-copilot-cli";
@@ -350,13 +355,23 @@
       # Development Shell Builders
       # ------------------------------------------------------------------------
 
-      # GPU policy for AI devShell: AMD -> ROCm, NVIDIA -> CUDA, none -> CPU only
+      # GPU policy for AI devShell: AMD -> ROCm, NVIDIA -> CUDA, Intel -> Vulkan; CPU-only is forbidden
       mkAiShell =
         {
           gpu ? "none",
           extraShells ? [ ],
         }:
         let
+          ollamaPkg =
+            if gpu == "amd" then
+              pkgsUnstable.ollama-rocm
+            else if gpu == "nvidia" then
+              pkgsUnstableUnfree.ollama-cuda
+            else if gpu == "intel" then
+              pkgsUnstable.ollama-vulkan
+            else
+              throw "mkAiShell: GPU/NPU backend required for ollama (got gpu = \"${gpu}\"); CPU-only execution is forbidden.";
+
           gpuPackages =
             if gpu == "amd" then
               (with pkgs; [
@@ -390,7 +405,7 @@
               pnpm
             ])
             ++ [
-              pkgsUnstable.ollama
+              ollamaPkg
               # nixpkgs-unstable's opencode 2.2.5 expression currently has a
               # stale fixed-output hash for its canonicalized node_modules.
               # Keep the package while correcting only that dependency hash.
