@@ -7,6 +7,10 @@
     "camoufox": {
       "command": "camoufox-mcp",
       "args": []
+    },
+    "playwright-browser": {
+      "url": "http://127.0.0.1:8931/mcp",
+      "type": "http"
     }
   }
 }

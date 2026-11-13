@@ -22,3 +22,6 @@ id_ed25519*
 *.pfx
 .env
 .env.*
+
+# Local MCP configuration generated for Orca
+/.mcp.json
