@@ -409,11 +409,7 @@
               # nixpkgs-unstable's opencode 2.2.5 expression currently has a
               # stale fixed-output hash for its canonicalized node_modules.
               # Keep the package while correcting only that dependency hash.
-              (pkgsUnstable.opencode.overrideAttrs (old: {
-                node_modules = old.node_modules.overrideAttrs (_: {
-                  outputHash = "sha256-prx9dX7kUvs/E3zopkaPk5LXh3xJAy5sZeum/W8L7cA=";
-                });
-              }))
+              pkgsUnstable.opencode
               pkgsUnstable.codex
               # Hermes manages its own Python runtime and updates in ~/.hermes.
               # Expose the official user installation in every AI shell.
